@@ -1,0 +1,234 @@
+====================================================================================================
+PROJECT SPECIFICATION DOCUMENT (REVISED & EXTENDED)
+Title: Evaluating Emerging Autonomous Vehicle (AV) Congestion, Safety, and Modal Shift Dynamics 
+       Using SFCTA's Activity-Based (SF-CHAMP) and Dynamic Network Simulation Framework
+Division: Strategy and Technology Policy, San Francisco County Transportation Authority (SFCTA)
+Author/Role: Quantitative Technology Policy Lead / Intern
+Date: July 2026
+Version: 4.0-PRODUCTION (With Full Equation Variable & Term Definitions)
+====================================================================================================
+
+1. EXECUTIVE SUMMARY & OBJECTIVES
+----------------------------------------------------------------------------------------------------
+This specification establishes an empirical, policy-aligned analytical pipeline to evaluate the 
+network-level impacts of Autonomous Vehicles (AVs) on San Francisco's transportation grid. It extends 
+existing SFCTA modeling tools (SF-CHAMP and Dynamic Traffic Assignment) while addressing critical data 
+starvation, transit cannibalization, "deadheading" VMT, and emergency responder operational risks.
+
+Key Enhancements in Version 4.0:
+  1. Complete Upper-Level Nested Logit Logsum linkage with fully defined mathematical variables.
+  2. Non-linear Highway Capacity Manual (HCM) incident curves and DTA-SF-CHAMP feedback equations.
+  3. Stratified spatial sampling, counterfactual temporal windows, and proxy equations.
+  4. Operational Design Domain (ODD)-matched safety baselines controlling for road class/speed.
+  5. Bayesian Hierarchical / Sequential Probability Ratio Test (SPRT) reversion engine variables.
+
+2. ECONOMETRIC & NETWORK METHODOLOGICAL ENHANCEMENTS
+----------------------------------------------------------------------------------------------------
+2.1 Complete Nested Logit Architecture & Mode Substitution to Transit:
+    To measure true modal shift from public transit (Muni/BART) to AVs, the lower "For-Hire" nest 
+    must pass its composite inclusive value (logsum) up to the primary tour-mode choice tree.
+
+    A. Lower-Level For-Hire Nest Systematic Utility Equations:
+       V_TNC_AV = b_0_AV + b_fare * Fare_AV + b_ivtt_AV * IVTT + b_ovtt * OVTT + b_comfort * Comfort_Discount
+       V_TNC_H  = b_0_H  + b_fare * Fare_H  + b_ivtt_H  * IVTT + b_ovtt * OVTT
+       
+       Variable & Parameter Definitions:
+         - V_TNC_AV: Systematic deterministic utility derived from choosing an Autonomous Robotaxi.
+         - V_TNC_H: Systematic deterministic utility derived from choosing Human-Driven Rideshare.
+         - b_0_AV, b_0_H: Alternative-Specific Constants (ASCs) capturing baseline unobserved preference for 
+           AV and human-driven rideshare, respectively.
+         - b_fare: Marginal utility parameter (coefficient) for trip monetary cost ($/trip).
+         - Fare_AV, Fare_H: Expected total trip monetary fare ($) for AV and human rideshare.
+         - b_ivtt_AV, b_ivtt_H: Marginal utility parameters for in-vehicle travel time (utils/minute).
+         - IVTT: Total time spent traveling inside the vehicle (minutes).
+         - b_ovtt: Marginal utility parameter for out-of-vehicle travel time, such as waiting at curb (utils/minute).
+         - OVTT: Out-of-vehicle wait/pickup time (minutes).
+         - b_comfort: Parameter weighting the utility bonus associated with vehicle comfort/privacy.
+         - Comfort_Discount: Binary indicator or scaled index reflecting enhanced utility from autonomous 
+           pod interior ergonomics, privacy, or working environment (utils).
+
+    B. Inclusive Value (Logsum) of For-Hire Nest:
+       I_FH = ln[ exp(V_TNC_AV / mu_FH) + exp(V_TNC_H / mu_FH) ]
+
+       Variable & Parameter Definitions:
+         - I_FH: Inclusive Value (logsum) measuring total aggregate expected maximum utility 
+           available across all options within the For-Hire sub-nest.
+         - ln: Natural logarithm function.
+         - exp: Exponential function.
+         - mu_FH: Nest structural scale parameter (nesting parameter) measuring the degree of independence 
+           between TNC-AV and TNC-H (0 < mu_FH <= 1.0).
+
+    C. Upper-Level Tour-Mode Choice Tree (Transit vs. Drive vs. Walk vs. For-Hire):
+       V_FH_Composite = mu_FH * I_FH + b_income_segment * Income_Group
+       V_Transit      = b_0_transit + b_fare * Fare_Transit + b_ivtt_Transit * IVTT_Transit + b_wait * Wait_Time
+
+       Probability of Choosing Transit:
+         P(Transit) = exp(V_Transit) / [ exp(V_Transit) + exp(V_FH_Composite) + exp(V_Drive) + exp(V_Walk) ]
+
+       Variable & Parameter Definitions:
+         - V_FH_Composite: Upper-level composite utility for the entire For-Hire mode category.
+         - b_income_segment: Parameter capturing differential sensitivity to rideshare across income brackets.
+         - Income_Group: Categorical variable representing household income tier (e.g., Low, Mid, High).
+         - V_Transit, V_Drive, V_Walk: Systematic utilities for Public Transit, Driving Alone, and Walking.
+         - b_0_transit: Alternative-Specific Constant for public transit.
+         - Fare_Transit: Transit trip ticket/card fare ($).
+         - b_ivtt_Transit: In-vehicle travel time coefficient for transit vehicles (utils/minute).
+         - IVTT_Transit: Time spent onboard public transit (minutes).
+         - b_wait: Out-of-vehicle wait/transfer time coefficient for public transit (utils/minute).
+         - Wait_Time: Expected wait and transfer duration at transit stops/stations (minutes).
+         - P(Transit): Final probability that a traveler chooses public transit for a given tour.
+
+    *Specification Test Note:* A Likelihood-Ratio Test is enforced to evaluate mode-specific IVTT 
+    parameters (b_ivtt_AV vs. b_ivtt_Transit) against a restricted generic form.
+
+2.2 Income-Segmented Equity Utility:
+    Equity Priority Communities (EPCs) are integrated directly into utility functions via income-stratified 
+    Value of Travel Time Savings (VOT_k) and neighborhood-specific Alternative Specific Constants (ASCs), 
+    ensuring policy scenarios evaluate fare-elasticity impacts on low-income transit-dependent riders.
+
+    Definition of Terms:
+      - VOT_k = b_ivtt_k / b_fare_k: Value of Travel Time Savings for income segment k ($/hour), 
+        where b_ivtt_k and b_fare_k are segment-specific time and cost parameters.
+
+2.3 Non-Linear HCM Incident Capacity Drop & Iterative DTA Feedback Loop:
+    - Incident Capacity Reduction Equation:
+      C_effective = C_base * [ 1 - ( 1.1 * (N_blocked / N_total)^0.8 + F_rubberneck ) ]
+
+      Variable & Term Definitions:
+        - C_effective: Adjusted operational roadway lane capacity under incident conditions (vehicles/hour/lane).
+        - C_base: Baseline uninterrupted roadway design capacity (vehicles/hour/lane).
+        - N_blocked: Number of roadway travel lanes physically obstructed by an AV "brick" or incident.
+        - N_total: Total number of travel lanes in the roadway section direction.
+        - (N_blocked / N_total)^0.8: Non-linear bottleneck impact factor derived from Highway Capacity 
+          Manual (HCM) incident delay guidelines.
+        - F_rubberneck: Visual distraction/friction factor (scalar between 0.05 and 0.25) capturing capacity 
+          loss in adjacent open lanes due to flashing emergency lights (SFFD) or rubbernecking drivers.
+
+    - Demand-Supply Feedback Equilibration Convergence Equation:
+      RMSE_skim = sqrt[ (1 / N_links) * SUM_{i=1}^{N_links} ( Skim_Time_DTA_{i, m} - Skim_Time_SFCHAMP_{i, m-1} )^2 ]
+
+      Variable & Term Definitions:
+        - RMSE_skim: Root Mean Square Error of travel time skims across the network links between iterations.
+        - N_links: Total number of network links evaluated in the Dynamic Traffic Assignment.
+        - Skim_Time_DTA_{i, m}: Link travel time on link i output by DTA simulation at iteration m (minutes).
+        - Skim_Time_SFCHAMP_{i, m-1}: Link travel time on link i input to SF-CHAMP mode choice at iteration m-1 (minutes).
+        - Convergence Criterion: Iteration terminates when RMSE_skim < 0.01 across 5 consecutive loops.
+
+3. CAUSAL PROXY PIPELINE & SAMPLING ERROR CORRECTIONS
+----------------------------------------------------------------------------------------------------
+3.1 Proxy 1: Stratified Spatial Sampling for Deadheading VMT (R_deadhead):
+    Equation:
+      R_deadhead_Citywide = SUM_{z=1}^{Z} [ w_z * R_deadhead_z ]
+
+      Where local zonal deadheading ratio R_deadhead_z is:
+        R_deadhead_z = ( VMT_Total_Observed_z - VMT_Passenger_Serviced_z ) / VMT_Total_Observed_z
+
+      Variable & Term Definitions:
+        - R_deadhead_Citywide: Weighted overall ratio of empty (deadheading) AV miles relative to total AV miles.
+        - Z: Total number of spatial sampling strata (Z = 3: CBD Corridors, Residential Arterials, Staging Hubs).
+        - w_z: Spatial weighting factor representing the proportion of total citywide AV vehicle traffic occurring in zone z.
+        - R_deadhead_z: Estimated deadheading ratio within spatial zone z.
+        - VMT_Total_Observed_z: Total Vehicle Miles Traveled observed by vision sensors/telemetry in zone z.
+        - VMT_Passenger_Serviced_z: Estimated Vehicle Miles Traveled in zone z while carrying at least one fare passenger.
+
+3.2 Proxy 2: Spatio-Temporal Buffer & Counterfactual Control for AV Blockages:
+    Equation:
+      Delay_AV_Net = [ t_actual(Incident_Day) - t_baseline(Control_Weeks) ]
+
+      Variable & Term Definitions:
+        - Delay_AV_Net: Net causal transit delay (minutes) attributed directly to an AV blockage event.
+        - t_actual(Incident_Day): Observed travel time (minutes) for a public transit vehicle (GTFS-RT) on 
+          a corridor segment within a 50-meter spatial buffer and +/-15 minute temporal window of an AV incident.
+        - t_baseline(Control_Weeks): Median baseline travel time (minutes) for the identical transit vehicle on 
+          the identical corridor segment during matching time-of-day/day-of-week windows across 3 non-incident prior weeks.
+
+3.3 DMV vs. CPUC VMT Denominator Disambiguation:
+    - Explicit Limitation Notice: DMV filings cover testing VMT (with or without safety drivers) and 
+      CANNOT be used as the denominator for commercial passenger service evaluation. 
+    - Commercial VMT Denominator: Derived strictly from CPUC quarterly commercial filings, augmented 
+      by regional synthetic activity model scaling.
+
+4. ODD-MATCHED SAFETY EVALUATION & BAYESIAN REVERSION ARCHITECTURE
+----------------------------------------------------------------------------------------------------
+4.1 Operational Design Domain (ODD)-Matched Safety Baseline:
+    Addressing Koopman/Cummings critiques, aggregate statewide human crash rates are rejected. 
+    The AV safety baseline is constructed using ODD-stratified human crash benchmarks:
+      - Stratification Variables: Road Class (Arterial vs. Local), Speed Limit (<=25 mph vs 35+ mph), 
+        and Time-of-Day (Daylight vs Nighttime).
+      - Controlled Metric: Collisions per 100M VMT within identical SF geographic sandboxes.
+
+4.2 Sequential Probability Ratio Test (SPRT) & Bayesian Reversion Engine:
+    - Bayesian Prior Distribution:
+        theta ~ Gamma(alpha_0, beta_0)
+
+    - Poisson Likelihood Function:
+        P(K_incidents | theta, VMT_Stage) = [ (theta * VMT_Stage)^K_incidents * exp(-theta * VMT_Stage) ] / K_incidents!
+
+    - Posterior Update Distribution Equation:
+        theta | Data ~ Gamma(alpha_0 + K_incidents, beta_0 + VMT_Stage)
+
+      Variable & Parameter Definitions:
+        - theta: True underlying rate of safety incidents per unit of Vehicle Miles Traveled (incidents/VMT).
+        - Gamma(alpha, beta): Gamma probability distribution defined by shape parameter alpha and rate parameter beta.
+        - alpha_0: Prior shape parameter representing baseline historical human incident count weight.
+        - beta_0: Prior rate parameter representing baseline historical human VMT exposure weight (100M VMT units).
+        - K_incidents: Observed cumulative count of AV safety incidents (e.g., SFFD obstructions or retrieval stops) 
+          within the current deployment stage.
+        - VMT_Stage: Cumulative commercial Vehicle Miles Traveled logged by the AV operator in the current deployment stage.
+        - alpha_0 + K_incidents: Posterior shape parameter updated by observed incident counts.
+        - beta_0 + VMT_Stage: Posterior rate parameter updated by observed VMT exposure.
+
+    - Decision Trigger Rules:
+        Demotion Flag: IF P( theta_AV > 1.5 * theta_Human | Data ) > 0.95 THEN Trigger Provisional Review.
+        Advancement Flag: IF P( theta_AV < theta_Human | Data ) > 0.90 AND VMT_Stage >= 1,000,000 VMT.
+
+      Variable & Term Definitions:
+        - theta_AV: Posterior incident rate parameter for the evaluated AV operator.
+        - theta_Human: Established ODD-matched baseline incident rate parameter for human drivers.
+        - P( ... | Data ): Bayesian posterior probability calculated from the updated Gamma distribution.
+
+4.3 Hysteresis & Rolling Window Integration:
+    To prevent regulatory oscillation ("stage flip-flopping"), safety metrics are calculated on a 
+    rolling 30-day window. A demoted operator must maintain compliance for 60 consecutive days 
+    under provisional status before re-applying for stage advancement.
+
+5. QUALITY ASSURANCE (QA) & BENCHMARKING MATRIX
+----------------------------------------------------------------------------------------------------
+QA 1: Federal vs. State Telemetry Cross-Reconciliation
+  - Source of Truth: NHTSA SGO Crash Logs vs. CPUC Commercial Incident Filings.
+  - Check: Automated VIN-level join across datasets. Flag any collision reported to NHTSA that is 
+    missing from CPUC filings within 10 business days. Tolerance = 0 missing events.
+
+QA 2: SF-CHAMP Logsum Bounds & Skim Convergence
+  - Source of Truth: SF-CHAMP Base Year Calibration.
+  - Check: Verify lower-nest logsum parameters (mu_FH) satisfy microeconomic utility bounds 
+    (0 < mu_FH <= 1.0). Verify RMSE_skim < 0.01 between DTA output speeds and SF-CHAMP input skims.
+
+QA 3: Proxy 1 Ground-Truth Calibration
+  - Source of Truth: CPUC Disclosed Historical Audit Sample ("TNCs 2020").
+  - Check: Compare vision-based deadheading estimates against historical operator disclosures during 
+    matching fleet size regimes. Reject proxy pipeline if mean absolute percentage error (MAPE) > 12%.
+
+QA 4: Proxy 2 Causal Counterfactual Validation
+  - Source of Truth: SFMTA GTFS-Realtime / Automated Vehicle Location (AVL) Historical Archive.
+  - Check: Run placebo tests on non-incident control corridors. The synthetic control estimator 
+    must return zero statistically significant transit delay (p > 0.10) on placebo days.
+
+QA 5: Bayesian SPRT False-Positive Stress Testing
+  - Source of Truth: Synthetic Poisson Incident Generator.
+  - Check: Execute 10,000 Monte Carlo runs of the SPRT engine under low-VMT conditions (VMT < 100,000). 
+    Verify false demotion rate remains strictly below 1.0%.
+
+6. VISUAL COMPONENT SPECIFICATIONS
+----------------------------------------------------------------------------------------------------
+Component 1: Operational GIS & Live Bayesian Risk Dashboard (Prospector Stack)
+  - Stack: Mapbox GL JS / Deck.gl + React + D3.js + Google Photorealistic 3D Tiles API.
+  - Purpose: Continuous spatial monitoring of AV incident clusters, GTFS transit delay hotspots, 
+    and live Bayesian posterior safety distributions per operator.
+
+Component 2: Executive Policy Trade-Off Engine & 3D Canyon Visualizer (Board View)
+  - Stack: CesiumJS / Google Maps 3D Tiles API + Plotly.js / Streamlit.
+  - Purpose: High-level scenario modeling for SFCTA Board members, pairing policy levers 
+    (deadheading tax, PUDO mandates) with interactive 3D fly-throughs of urban canyon hotspots.
+
+====================================================================================================

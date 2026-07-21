@@ -1,0 +1,262 @@
+====================================================================================================
+PROJECT SPECIFICATION DOCUMENT (REVISED & TEMPORALLY BOUNDED)
+Title: Evaluating Emerging Autonomous Vehicle (AV) Congestion, Safety, and Modal Shift Dynamics 
+       Using SFCTA's Activity-Based (SF-CHAMP) and Dynamic Network Simulation Framework
+Division: Strategy and Technology Policy, San Francisco County Transportation Authority (SFCTA)
+Author/Role: Quantitative Technology Policy Lead / Intern
+Date: July 2026
+Version: 6.0-PRODUCTION (With Parametric Temporal Windowing & Date-Bounded Snapshot Analysis)
+====================================================================================================
+
+1. EXECUTIVE SUMMARY & OBJECTIVES
+----------------------------------------------------------------------------------------------------
+This specification establishes an empirical, policy-aligned analytical pipeline to evaluate the 
+network-level impacts of Autonomous Vehicles (AVs) on San Francisco's transportation grid. It extends 
+existing SFCTA modeling tools (SF-CHAMP and Dynamic Traffic Assignment) while addressing critical data 
+starvation, transit cannibalization, "deadheading" VMT, and emergency responder operational risks.
+
+Key Enhancements in Version 6.0:
+  1. Integration of Parametric Temporal Windowing (START_DATE to END_DATE) across all data ingestion, 
+     ETL cleaning, QA gateways, and snapshot modeling modules.
+  2. Date-bounded snapshot analysis engine for running scenario evaluation on targeted temporal slices.
+  3. Direct programmatic API integrations (DataSF SODA API, NHTSA REST API, 511.org GTFS-RT, UC Berkeley TIMS).
+  4. Complete Upper-Level Nested Logit Logsum linkage with fully defined mathematical variables.
+  5. Non-linear Highway Capacity Manual (HCM) incident curves and ODD-matched Bayesian SPRT safety engine.
+
+2. PARAMETRIC TEMPORAL WINDOWING CONFIGURATION
+----------------------------------------------------------------------------------------------------
+2.1 Global Date-Range Execution Parameters:
+    All ingestion, cleaning, QA, and modeling scripts inherit two mandatory CLI/environment parameters:
+      - START_DATE (Format: YYYY-MM-DD): The inclusive lower bound date for the analysis snapshot window.
+      - END_DATE   (Format: YYYY-MM-DD): The inclusive upper bound date for the analysis snapshot window.
+      - Delta_Days = END_DATE - START_DATE + 1: Total duration (days) of the evaluation snapshot.
+
+2.2 Temporal Filtering Across Data Sources:
+    - DataSF SODA API: Ingests records via `$where = "requested_datetime >= 'START_DATE T00:00:00' AND requested_datetime <= 'END_DATE T23:59:59'"`.
+    - NHTSA SGO API: Filters incidents where `incident_date BETWEEN 'START_DATE' AND 'END_DATE'`.
+    - GTFS-Realtime / AVL Archives: Slices transit speed logs to matching calendar dates `[START_DATE, END_DATE]`.
+    - CPUC Commercial Filings: Selects quarterly disclosures overlapping the `[START_DATE, END_DATE]` interval.
+    - Historical Control Window: Automatically sets `CONTROL_START = START_DATE - 21 days` to construct 
+      the 3-week pre-incident baseline for Causal Proxy 2.
+
+3. ECONOMETRIC & NETWORK METHODOLOGICAL ENHANCEMENTS
+----------------------------------------------------------------------------------------------------
+3.1 Complete Nested Logit Architecture & Mode Substitution to Transit:
+    To measure true modal shift from public transit (Muni/BART) to AVs, the lower "For-Hire" nest 
+    must pass its composite inclusive value (logsum) up to the primary tour-mode choice tree.
+
+    A. Lower-Level For-Hire Nest Systematic Utility Equations:
+       V_TNC_AV = b_0_AV + b_fare * Fare_AV + b_ivtt_AV * IVTT + b_ovtt * OVTT + b_comfort * Comfort_Discount
+       V_TNC_H  = b_0_H  + b_fare * Fare_H  + b_ivtt_H  * IVTT + b_ovtt * OVTT
+       
+       Variable & Parameter Definitions:
+         - V_TNC_AV: Systematic deterministic utility derived from choosing an Autonomous Robotaxi.
+         - V_TNC_H: Systematic deterministic utility derived from choosing Human-Driven Rideshare.
+         - b_0_AV, b_0_H: Alternative-Specific Constants (ASCs) capturing baseline unobserved preference for 
+           AV and human-driven rideshare, respectively.
+         - b_fare: Marginal utility parameter (coefficient) for trip monetary cost ($/trip).
+         - Fare_AV, Fare_H: Expected total trip monetary fare ($) for AV and human rideshare.
+         - b_ivtt_AV, b_ivtt_H: Marginal utility parameters for in-vehicle travel time (utils/minute).
+         - IVTT: Total time spent traveling inside the vehicle (minutes).
+         - b_ovtt: Marginal utility parameter for out-of-vehicle travel time, such as waiting at curb (utils/minute).
+         - OVTT: Out-of-vehicle wait/pickup time (minutes).
+         - b_comfort: Parameter weighting the utility bonus associated with vehicle comfort/privacy.
+         - Comfort_Discount: Binary indicator or scaled index reflecting enhanced utility from autonomous 
+           pod interior ergonomics, privacy, or working environment (utils).
+
+    B. Inclusive Value (Logsum) of For-Hire Nest:
+       I_FH = ln[ exp(V_TNC_AV / mu_FH) + exp(V_TNC_H / mu_FH) ]
+
+       Variable & Parameter Definitions:
+         - I_FH: Inclusive Value (logsum) measuring total aggregate expected maximum utility 
+           available across all options within the For-Hire sub-nest.
+         - ln: Natural logarithm function.
+         - exp: Exponential function.
+         - mu_FH: Nest structural scale parameter (nesting parameter) measuring the degree of independence 
+           between TNC-AV and TNC-H (0 < mu_FH <= 1.0).
+
+    C. Upper-Level Tour-Mode Choice Tree (Transit vs. Drive vs. Walk vs. For-Hire):
+       V_FH_Composite = mu_FH * I_FH + b_income_segment * Income_Group
+       V_Transit      = b_0_transit + b_fare * Fare_Transit + b_ivtt_Transit * IVTT_Transit + b_wait * Wait_Time
+
+       Probability of Choosing Transit:
+         P(Transit) = exp(V_Transit) / [ exp(V_Transit) + exp(V_FH_Composite) + exp(V_Drive) + exp(V_Walk) ]
+
+       Variable & Parameter Definitions:
+         - V_FH_Composite: Upper-level composite utility for the entire For-Hire mode category.
+         - b_income_segment: Parameter capturing differential sensitivity to rideshare across income brackets.
+         - Income_Group: Categorical variable representing household income tier (e.g., Low, Mid, High).
+         - V_Transit, V_Drive, V_Walk: Systematic utilities for Public Transit, Driving Alone, and Walking.
+         - b_0_transit: Alternative-Specific Constant for public transit.
+         - Fare_Transit: Transit trip ticket/card fare ($).
+         - b_ivtt_Transit: In-vehicle travel time coefficient for transit vehicles (utils/minute).
+         - IVTT_Transit: Time spent onboard public transit (minutes).
+         - b_wait: Out-of-vehicle wait/transfer time coefficient for public transit (utils/minute).
+         - Wait_Time: Expected wait and transfer duration at transit stops/stations (minutes).
+         - P(Transit): Final probability that a traveler chooses public transit for a given tour.
+
+    *Specification Test Note:* A Likelihood-Ratio Test is enforced to evaluate mode-specific IVTT 
+    parameters (b_ivtt_AV vs. b_ivtt_Transit) against a restricted generic form.
+
+3.2 Income-Segmented Equity Utility:
+    Equity Priority Communities (EPCs) are integrated directly into utility functions via income-stratified 
+    Value of Travel Time Savings (VOT_k) and neighborhood-specific Alternative Specific Constants (ASCs), 
+    ensuring policy scenarios evaluate fare-elasticity impacts on low-income transit-dependent riders.
+
+    Definition of Terms:
+      - VOT_k = b_ivtt_k / b_fare_k: Value of Travel Time Savings for income segment k ($/hour), 
+        where b_ivtt_k and b_fare_k are segment-specific time and cost parameters.
+
+3.3 Non-Linear HCM Incident Capacity Drop & Iterative DTA Feedback Loop:
+    - Incident Capacity Reduction Equation:
+      C_effective = C_base * [ 1 - ( 1.1 * (N_blocked / N_total)^0.8 + F_rubberneck ) ]
+
+      Variable & Term Definitions:
+        - C_effective: Adjusted operational roadway lane capacity under incident conditions (vehicles/hour/lane).
+        - C_base: Baseline uninterrupted roadway design capacity (vehicles/hour/lane).
+        - N_blocked: Number of roadway travel lanes physically obstructed by an AV "brick" or incident.
+        - N_total: Total number of travel lanes in the roadway section direction.
+        - (N_blocked / N_total)^0.8: Non-linear bottleneck impact factor derived from Highway Capacity 
+          Manual (HCM) incident delay guidelines.
+        - F_rubberneck: Visual distraction/friction factor (scalar between 0.05 and 0.25) capturing capacity 
+          loss in adjacent open lanes due to flashing emergency lights (SFFD) or rubbernecking drivers.
+
+    - Demand-Supply Feedback Equilibration Convergence Equation:
+      RMSE_skim = sqrt[ (1 / N_links) * SUM_{i=1}^{N_links} ( Skim_Time_DTA_{i, m} - Skim_Time_SFCHAMP_{i, m-1} )^2 ]
+
+      Variable & Term Definitions:
+        - RMSE_skim: Root Mean Square Error of travel time skims across the network links between iterations.
+        - N_links: Total number of network links evaluated in the Dynamic Traffic Assignment.
+        - Skim_Time_DTA_{i, m}: Link travel time on link i output by DTA simulation at iteration m (minutes).
+        - Skim_Time_SFCHAMP_{i, m-1}: Link travel time on link i input to SF-CHAMP mode choice at iteration m-1 (minutes).
+        - Convergence Criterion: Iteration terminates when RMSE_skim < 0.01 across 5 consecutive loops.
+
+4. TEMPORALLY SNAPSHOTTED CAUSAL PROXY PIPELINE
+----------------------------------------------------------------------------------------------------
+4.1 Proxy 1: Stratified Spatial Sampling for Deadheading VMT (R_deadhead):
+    Equation evaluated strictly over [START_DATE, END_DATE]:
+      R_deadhead_Snapshot = SUM_{z=1}^{Z} [ w_z * R_deadhead_z(START_DATE, END_DATE) ]
+
+      Where local zonal deadheading ratio R_deadhead_z is:
+        R_deadhead_z = ( VMT_Total_Observed_z - VMT_Passenger_Serviced_z ) / VMT_Total_Observed_z
+
+      Variable & Term Definitions:
+        - R_deadhead_Snapshot: Weighted overall ratio of empty AV miles observed within [START_DATE, END_DATE].
+        - Z: Total number of spatial sampling strata (Z = 3: CBD Corridors, Residential Arterials, Staging Hubs).
+        - w_z: Spatial weighting factor representing proportion of AV traffic in zone z during snapshot.
+        - VMT_Total_Observed_z: Total VMT observed by vision sensors/telemetry in zone z during [START_DATE, END_DATE].
+        - VMT_Passenger_Serviced_z: VMT in zone z carrying fare passengers during [START_DATE, END_DATE].
+
+4.2 Proxy 2: Spatio-Temporal Buffer & Counterfactual Control for AV Blockages:
+    Equation evaluated for incidents where START_DATE <= t_incident <= END_DATE:
+      Delay_AV_Net = [ t_actual(t_incident) - t_baseline(t_incident - 21 days to t_incident - 1 day) ]
+
+      Variable & Term Definitions:
+        - Delay_AV_Net: Net causal transit delay (minutes) attributed directly to an AV blockage event.
+        - t_actual(t_incident): Observed travel time (minutes) for transit (GTFS-RT) on corridor within 
+          50m buffer and +/-15 mins of AV incident occurring at timestamp t_incident.
+        - t_baseline(...): Median baseline travel time (minutes) on matching corridor/time-of-day across 
+          the 3-week period preceding START_DATE.
+
+4.3 DMV vs. CPUC VMT Denominator Disambiguation:
+    - Explicit Limitation Notice: DMV filings cover testing VMT (with or without safety drivers) and 
+      CANNOT be used as the denominator for commercial passenger service evaluation. 
+    - Commercial VMT Denominator: Derived strictly from CPUC quarterly commercial filings overlapping 
+      [START_DATE, END_DATE], augmented by regional synthetic activity model scaling.
+
+5. ODD-MATCHED SAFETY EVALUATION & BAYESIAN REVERSION ARCHITECTURE
+----------------------------------------------------------------------------------------------------
+5.1 Operational Design Domain (ODD)-Matched Safety Baseline:
+    Constructed for the snapshot period [START_DATE, END_DATE] controlling for Road Class, Speed Limit, 
+    and Time-of-Day against historical human driver benchmarks.
+
+5.2 Sequential Probability Ratio Test (SPRT) & Bayesian Reversion Engine:
+    - Bayesian Prior Distribution:
+        theta ~ Gamma(alpha_0, beta_0)
+
+    - Poisson Likelihood Function over Snapshot Window:
+        P(K_snapshot | theta, VMT_snapshot) = [ (theta * VMT_snapshot)^K_snapshot * exp(-theta * VMT_snapshot) ] / K_snapshot!
+
+    - Posterior Update Distribution Equation:
+        theta | Snapshot ~ Gamma(alpha_0 + K_snapshot, beta_0 + VMT_snapshot)
+
+      Variable & Parameter Definitions:
+        - theta: True underlying rate of safety incidents per unit of VMT (incidents/VMT).
+        - K_snapshot: Cumulative count of AV safety incidents observed during [START_DATE, END_DATE].
+        - VMT_snapshot: Cumulative commercial VMT logged by operator during [START_DATE, END_DATE].
+        - alpha_0 + K_snapshot: Updated posterior shape parameter for the snapshot window.
+        - beta_0 + VMT_snapshot: Updated posterior rate parameter for the snapshot window.
+
+    - Decision Trigger Rules (Evaluated at END_DATE):
+        Demotion Flag: IF P( theta_AV > 1.5 * theta_Human | Snapshot ) > 0.95 THEN Trigger Provisional Review.
+        Advancement Flag: IF P( theta_AV < theta_Human | Snapshot ) > 0.90 AND VMT_snapshot >= 1,000,000 VMT.
+
+5.3 Hysteresis & Rolling Window Integration:
+    Calculated on a rolling 30-day window ending at END_DATE. A demoted operator must maintain compliance 
+    for 60 consecutive days under provisional status before re-applying for stage advancement.
+
+6. INTEGRATED DATA INGESTION, CLEANING & QA GATEWAY MATRIX WITH TEMPORAL BOUNDS
+----------------------------------------------------------------------------------------------------
+6.1 Automated Data Ingestion Stack & API Sources:
+    - SF 311 & GIS Layers: DataSF SODA REST API filtered by requested_datetime BETWEEN START_DATE AND END_DATE.
+    - Federal Incident Telemetry: NHTSA Public API filtered by incident_date BETWEEN START_DATE AND END_DATE.
+    - Transit Real-Time Speeds: 511.org GTFS-RT Protocol Buffers sliced to matching dates [START_DATE, END_DATE].
+    - California DMV/CPUC Data: Harvested from UC Berkeley TIMS Portal for overlapping quarterly bounds.
+    - Road Network Geometry: Ingested programmatically via OSMnx for snapshot topology.
+
+6.2 Automated Cleaning & Harmonization ETL Rules:
+    - Rule 1 (Deduplication): Cross-reference SGO, 311, and SFFD logs using VIN, timestamp (+/- 5 mins), 
+      and spatial coordinates within [START_DATE, END_DATE] to eliminate duplicate records.
+    - Rule 2 (Spatial & Temporal Boundary Enforcement): Discard records with timestamps < START_DATE 
+      or > END_DATE, or occurring outside SF County boundaries.
+    - Rule 3 (GTFS Anomaly Cleaning): Filter out bus GPS telemetry jump anomalies (speeds > 65 mph or distance jumps > 500m/sec).
+
+6.3 QA Gateway Validation Suite (Date-Bounded):
+    - QA Gate 1 (Telemetry Cross-Reconciliation): Automated VIN-level join between NHTSA SGO and CPUC logs 
+      within [START_DATE, END_DATE]. Flag any collision missing from CPUC. Tolerance = 0 missing events.
+    - QA Gate 2 (SF-CHAMP Skim Convergence): Verify microeconomic utility bounds (0 < mu_FH <= 1.0) and 
+      ensure RMSE_skim < 0.01 between DTA output speeds and SF-CHAMP input skims for snapshot demand.
+    - QA Gate 3 (Proxy 1 Ground-Truth Calibration): Compare vision-based deadheading estimates against 
+      CPUC audit baselines for matching snapshot months. Reject if MAPE > 12%.
+    - QA Gate 4 (Proxy 2 Placebo Validation): Run synthetic control placebo tests on non-incident corridors 
+      during [START_DATE, END_DATE]. Reject if placebo estimator yields p <= 0.10.
+    - QA Gate 5 (SPRT Stress Testing): Run 10,000 Monte Carlo runs under low VMT (<100k VMT) calibrated 
+      to Delta_Days snapshot length. Verify false demotion rate stays strictly below 1.0%.
+
+7. INTEGRATED 12-WEEK PROJECT WORKFLOW WITH TEMPORAL SNAPSHOT EXECUTION
+----------------------------------------------------------------------------------------------------
+Phase 1: Ingestion Pipeline & PostGIS Architecture with Date Parameters (Weeks 1-2)
+  - Week 1: Deploy PostGIS DB (EPSG:26910). Build Python ingestion scripts incorporating START_DATE / END_DATE CLI flags.
+  - Week 2: Ingest OSMnx graph. Execute Temporal ETL Cleaning Rules 1-3. Run QA Gate 1 for [START_DATE, END_DATE].
+
+Phase 2: Snapshot Proxy Construction & Calibration (Weeks 3-5)
+  - Week 3: Execute Proxy 1 (Spatial Stratification) for vision feeds within [START_DATE, END_DATE].
+  - Week 4: Execute Proxy 2 (Spatio-Temporal Buffer) using 3-week pre-START_DATE synthetic counterfactual control.
+  - Week 5: Execute QA Gate 3 (Proxy 1 MAPE Audit) and QA Gate 4 (Proxy 2 Placebo Test) on snapshot data.
+
+Phase 3: SF-CHAMP & DTA Model Snapshot Simulation (Weeks 6-8)
+  - Week 6: Update SF-CHAMP mode choice utilities and logsum linkage (I_FH) calibrated to snapshot trip tables.
+  - Week 7: Implement non-linear HCM capacity curves into DTA engine. Run iterative DTA <-> SF-CHAMP loop.
+  - Week 8: Execute QA Gate 2 (Utility Bounds & Skim Convergence RMSE < 0.01) for snapshot simulation.
+
+Phase 4: Snapshot Safety Evaluation & Policy Sensitivity Testing (Weeks 9-10)
+  - Week 9: Build ODD-matched human safety baselines for snapshot period. Update Bayesian SPRT posterior distributions.
+  - Week 10: Run QA Gate 5 (SPRT Monte Carlo Stress Test). Execute policy scenario runs ($0.75/mi tax, PUDO mandates).
+
+Phase 5: Visual Dashboards, Deliverables & Code Handoff (Weeks 11-12)
+  - Week 11: Deploy Component 1 (Live Mapbox Dashboard with Date Picker) and Component 2 (CesiumJS 3D Executive Engine).
+  - Week 12: Package Python ETL and PostGIS schemas to SFCTA GitHub. Submit Executive Policy Memo for [START_DATE, END_DATE].
+
+8. VISUAL COMPONENT SPECIFICATIONS WITH TEMPORAL CONTROLS
+----------------------------------------------------------------------------------------------------
+Component 1: Operational GIS & Live Bayesian Risk Dashboard (Prospector Stack)
+  - Stack: Mapbox GL JS / Deck.gl + React + D3.js + Google Photorealistic 3D Tiles API.
+  - Features: Interactive Date Range Picker (START_DATE to END_DATE), continuous spatial monitoring of 
+    AV incident clusters, GTFS transit delay hotspots, and live Bayesian posterior distributions.
+
+Component 2: Executive Policy Trade-Off Engine & 3D Canyon Visualizer (Board View)
+  - Stack: CesiumJS / Google Maps 3D Tiles API + Plotly.js / Streamlit.
+  - Features: Snapshot Period Selector, high-level scenario modeling for SFCTA Board members, pairing 
+    policy levers (deadheading tax, PUDO mandates) with interactive 3D fly-throughs of hotspot corridors.
+
+====================================================================================================
