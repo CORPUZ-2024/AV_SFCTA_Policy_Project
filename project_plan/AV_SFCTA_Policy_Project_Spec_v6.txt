@@ -13,7 +13,7 @@ Version: 6.0-PRODUCTION (With Parametric Temporal Windowing & Date-Bounded Snaps
 This specification establishes an empirical, policy-aligned analytical pipeline to evaluate the 
 network-level impacts of Autonomous Vehicles (AVs) on San Francisco's transportation grid. It extends 
 existing SFCTA modeling tools (SF-CHAMP and Dynamic Traffic Assignment) while addressing critical data 
-starvation, transit cannibalization, "deadheading" VMT, and emergency responder operational risks.
+limitations, transit cannibalization, "deadheading" VMT, and emergency responder operational risks.
 
 Key Enhancements in Version 6.0:
   1. Integration of Parametric Temporal Windowing (START_DATE to END_DATE) across all data ingestion, 
