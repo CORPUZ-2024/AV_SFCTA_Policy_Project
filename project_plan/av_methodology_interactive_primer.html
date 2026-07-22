@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AV Project Methodology & Integrated Primer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        :root {
+            --bg-main: #fdfbf7;
+            --card-bg: #ffffff;
+            --accent-primary: #334155;
+            --accent-soft: #64748b;
+            --accent-warm: #d97706;
+            --chart-line: #2563eb;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 450px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .nav-link.active {
+            border-bottom: 2px solid var(--accent-warm);
+            color: var(--accent-warm);
+        }
+
+        input[type="range"] {
+            accent-color: var(--accent-warm);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white border-b border-gray-200 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <h1 class="text-xl font-bold tracking-tight text-slate-800">SFCTA AV Evaluation <span class="font-light text-slate-500">| Methodology Review</span></h1>
+            <div class="flex space-x-6 text-sm font-medium">
+                <button onclick="scrollToSection('methodology')" class="nav-link text-slate-600 hover:text-amber-600 transition-colors">Methodology</button>
+                <button onclick="scrollToSection('statistical')" class="nav-link text-slate-600 hover:text-amber-600 transition-colors">Statistical Lab</button>
+                <button onclick="scrollToSection('data')" class="nav-link text-slate-600 hover:text-amber-600 transition-colors">Data Integrity</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-12 space-y-24">
+
+        <!-- Header Section -->
+        <header class="text-center space-y-6 max-w-4xl mx-auto">
+            <h2 class="text-4xl md:text-5xl font-extrabold text-slate-900 leading-tight">
+                Evaluating Emerging AV Dynamics with SF-CHAMP
+            </h2>
+            <p class="text-lg text-slate-600">
+                A comprehensive review of SFCTA's activity-based modeling and dynamic network simulation framework. This application deconstructs the shift from conventional GIS to programmatic spatial pipelines.
+            </p>
+        </header>
+
+        <!-- Section 1: Methodology Comparison -->
+        <section id="methodology" class="space-y-8">
+            <div class="bg-amber-50 border-l-4 border-amber-500 p-6 rounded-r-lg">
+                <h3 class="text-2xl font-bold text-amber-900 mb-2">1. The Methodology Shift</h3>
+                <p class="text-slate-700">
+                    Traditional transportation modeling relies on static trip-based analysis and manual GUI-driven GIS tasks. This section outlines the project's pivot toward automated, reproducibility-first pipelines using Python and activity-based tour modeling.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Conventional -->
+                <div class="glass-card p-8 rounded-2xl shadow-sm space-y-4 border-t-4 border-slate-300">
+                    <h4 class="text-xl font-semibold text-slate-800 uppercase tracking-wider text-sm">Conventional Methods</h4>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs mr-3 font-mono">Spatial</span>
+                            <p class="text-sm">Manual GUI GIS (ArcGIS/Shapefiles) with non-topological joins and static buffering.</p>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs mr-3 font-mono">Statistical</span>
+                            <p class="text-sm">Aggregate trip-based models. Individual movements analyzed in isolation without chaining.</p>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs mr-3 font-mono">Economic</span>
+                            <p class="text-sm">"Rule of Half" for consumer surplus—struggles with non-linear multi-modal shifts.</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Proposed -->
+                <div class="glass-card p-8 rounded-2xl shadow-sm space-y-4 border-t-4 border-amber-500">
+                    <h4 class="text-xl font-semibold text-amber-800 uppercase tracking-wider text-sm">Project Methodology</h4>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs mr-3 font-mono">Spatial</span>
+                            <p class="text-sm">Programmatic pipelines (GeoPandas, OSMnx). Automated graph-based street network correction.</p>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs mr-3 font-mono">Statistical</span>
+                            <p class="text-sm">Tour-based SF-CHAMP. Activity chains reflecting true human behavior via Random Utility Maximization.</p>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs mr-3 font-mono">Economic</span>
+                            <p class="text-sm">Disaggregate Logsums. Captures societal benefits across heterogeneous demographics.</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="max-w-3xl mx-auto text-center py-4">
+                <p class="text-sm italic text-slate-500">
+                    Rationale: This shift ensures algorithmic transparency and the ability to process high-velocity AV telemetry, though it introduces significant computational overhead compared to legacy methods.
+                </p>
+            </div>
+        </section>
+
+        <!-- Section 2: Statistical Modeling Lab -->
+        <section id="statistical" class="space-y-12">
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg">
+                <h3 class="text-2xl font-bold text-blue-900 mb-2">2. Statistical & Spatial Modeling Lab</h3>
+                <p class="text-slate-700">
+                    Understanding modal shifts requires deconstructing the <strong>Utility Function</strong>. Interact with the parameters below to see how factors like technological affinity or unplanned delays change the probability of a user choosing an AV over standard transit.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-12 items-center">
+                <!-- Controls -->
+                <div class="lg:col-span-1 space-y-8 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-4 uppercase">Parameter Adjustment</label>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <div class="flex justify-between text-xs mb-2">
+                                    <span class="font-semibold">AV Tech Affinity (β₃)</span>
+                                    <span id="val-affinity" class="text-blue-600 font-bold">0.0</span>
+                                </div>
+                                <input type="range" id="slider-affinity" min="0" max="2" step="0.1" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <p class="text-[10px] text-slate-500 mt-1 italic">Increases loyalty in younger demographics.</p>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs mb-2">
+                                    <span class="font-semibold">Unplanned Delay Penalty (β₄)</span>
+                                    <span id="val-penalty" class="text-red-600 font-bold">0.0</span>
+                                </div>
+                                <input type="range" id="slider-penalty" min="0" max="3" step="0.1" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <p class="text-[10px] text-slate-500 mt-1 italic">Impact of AV immobilizations/congestion.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-slate-100">
+                        <h5 class="text-xs font-bold text-slate-400 uppercase mb-3">Model Questions</h5>
+                        <ul class="text-xs space-y-2 text-slate-600">
+                            <li>• How does a 20% cost increase affect ridership?</li>
+                            <li>• When does transit become the dominant mode?</li>
+                            <li>• What is the 'breaking point' for AV service delays?</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Visualization -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="chart-container">
+                        <canvas id="utilityChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <span class="block text-[10px] text-slate-400 uppercase font-bold">Y-Axis Interpretation</span>
+                            <p class="text-sm font-medium">Probability of Mode Choice (0.0 to 1.0)</p>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg">
+                            <span class="block text-[10px] text-slate-400 uppercase font-bold">X-Axis Interpretation</span>
+                            <p class="text-sm font-medium">Generalized Cost ($)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logsum Explanation -->
+            <div class="grid md:grid-cols-2 gap-8 items-start pt-8">
+                <div class="space-y-4">
+                    <h4 class="text-xl font-bold text-slate-800">The Logsum Model (Consumer Surplus)</h4>
+                    <p class="text-sm text-slate-600">
+                        The logsum calculates the expected maximum utility across the entire choice set. It acts as a monetized measure of societal benefit.
+                    </p>
+                    <div class="p-4 bg-slate-900 rounded-lg text-white font-mono text-sm overflow-x-auto">
+                        E(CS<sub>n</sub>) = (1/α<sub>n</sub>) * ln(Σ e<sup>V<sub>nj</sub></sup>) + C
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+                    <h5 class="text-sm font-bold text-slate-700">Broad Expectations in Results:</h5>
+                    <ul class="text-sm space-y-3 text-slate-600">
+                        <li class="flex items-center gap-3">
+                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                            <span>Adding AVs typically <strong>increases</strong> the Logsum initially by providing a new choice.</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                            <span>If AV cruising increases traffic, transit utility (V<sub>j</sub>) drops, potentially <strong>lowering</strong> the net Logsum.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Data Integrity Matrix -->
+        <section id="data" class="space-y-8">
+            <div class="bg-emerald-50 border-l-4 border-emerald-500 p-6 rounded-r-lg">
+                <h3 class="text-2xl font-bold text-emerald-900 mb-2">3. Data Integrity & Harmonization</h3>
+                <p class="text-slate-700">
+                    The project establishes automated cleaning rules analogous to <strong>healthcare claims adjudication</strong>—where overlapping reports of a single incident must be deduplicated into a single "episode of care."
+                </p>
+            </div>
+
+            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Source & Refresh</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Raw Variables</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Derived Metrics</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Deduplication Logic</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-slate-900">NHTSA SGO API</div>
+                                <div class="text-[10px] text-emerald-600 font-bold uppercase mt-1 tracking-tighter">Event-Level / 10-Day</div>
+                            </td>
+                            <td class="px-6 py-4 text-xs text-slate-600">VIN, Timestamp, Speed, Severity, Narrative</td>
+                            <td class="px-6 py-4 text-xs font-medium text-slate-800">Episode_ID, Automation_Cat</td>
+                            <td class="px-6 py-4 text-[10px] text-slate-500">VIN Match + Timestamp ±5m + 50m Radius</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-slate-900">GTFS-Realtime</div>
+                                <div class="text-[10px] text-emerald-600 font-bold uppercase mt-1 tracking-tighter">Sub-Minute API</div>
+                            </td>
+                            <td class="px-6 py-4 text-xs text-slate-600">Vehicle_ID, Coord, Stop_Seq, Service_Alert</td>
+                            <td class="px-6 py-4 text-xs font-medium text-slate-800">Delay_AV_Net, Travel_Time</td>
+                            <td class="px-6 py-4 text-[10px] text-slate-500">Trip_ID + Continuous Time-Series Index</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-slate-900">SF OpenData</div>
+                                <div class="text-[10px] text-emerald-600 font-bold uppercase mt-1 tracking-tighter">Annual / Rolling 5Yr</div>
+                            </td>
+                            <td class="px-6 py-4 text-xs text-slate-600">Segment_ID, Minority_Pct, EPC_Status</td>
+                            <td class="px-6 py-4 text-xs font-medium text-slate-800">High_Injury_Flag, EPC_Equity_Score</td>
+                            <td class="px-6 py-4 text-[10px] text-slate-500">Spatial Intersection (NAD83 UTM 10N)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Cleaning Rule Highlight -->
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
+                    <h5 class="font-bold text-slate-800 text-sm mb-2 italic">The GTFS "Jump" Filter</h5>
+                    <p class="text-xs text-slate-500">Automatically discards GPS anomalies where bus speeds exceed 65 mph or distance jumps >500m/sec, ensuring model inputs are physically realistic.</p>
+                </div>
+                <div class="p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
+                    <h5 class="font-bold text-slate-800 text-sm mb-2 italic">Spatial Projection QA</h5>
+                    <p class="text-xs text-slate-500">Rule 2 programmatically enforces NAD83 UTM Zone 10N, preventing "out-of-county" data drifts that often plague manual GIS merges.</p>
+                </div>
+                <div class="p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
+                    <h5 class="font-bold text-slate-800 text-sm mb-2 italic">Episode Harmonization</h5>
+                    <p class="text-xs text-slate-500">Collapses multi-entity reports of the same crash (Developer vs Operator reports) into a single analytical unit to prevent over-counting.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-12 px-6 mt-24">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+            <div class="space-y-2">
+                <p class="text-white font-bold">AV Policy Evaluation Framework</p>
+                <p class="text-sm">Synthesized from SFCTA Activity-Based Modeling Standards.</p>
+            </div>
+            <div class="text-xs text-center md:text-right space-y-1">
+                <p>Data Sources: NHTSA, 511.org, DataSF</p>
+                <p>Model Specification: RUM Tour-Based Logit</p>
+                <p>&copy; 2024 Transportation Research Integrated Primer</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth Scroll
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- CHART LOGIC ---
+        const ctx = document.getElementById('utilityChart').getContext('2d');
+        let utilityChart;
+
+        function calculateLogit(cost, affinity, penalty) {
+            // Base parameters
+            const beta0 = 2.0; // Base privacy preference for AV
+            const beta1 = -0.15; // Cost sensitivity
+            
+            // Deterministic Utility (V)
+            // V = beta0 + beta1*Cost + beta3*Affinity - beta4*Penalty
+            const V = beta0 + (beta1 * cost) + (affinity * 2.5) - (penalty * 1.5);
+            
+            // Logit Probability: P = e^V / (1 + e^V)
+            return Math.exp(V) / (1 + Math.exp(V));
+        }
+
+        function generateData(affinity, penalty) {
+            const costs = [];
+            const probabilities = [];
+            for (let c = 0; c <= 50; c += 2) {
+                costs.push(c);
+                probabilities.push(calculateLogit(c, affinity, penalty));
+            }
+            return { costs, probabilities };
+        }
+
+        function updateChart() {
+            const affinity = parseFloat(document.getElementById('slider-affinity').value);
+            const penalty = parseFloat(document.getElementById('slider-penalty').value);
+            
+            document.getElementById('val-affinity').innerText = affinity.toFixed(1);
+            document.getElementById('val-penalty').innerText = penalty.toFixed(1);
+
+            const { costs, probabilities } = generateData(affinity, penalty);
+
+            utilityChart.data.labels = costs;
+            utilityChart.data.datasets[0].data = probabilities;
+            
+            // Logic for visual highlighting of shifts
+            if (penalty > 1.5) {
+                utilityChart.data.datasets[0].borderColor = '#ef4444'; // Red for high delay
+            } else if (affinity > 1.0) {
+                utilityChart.data.datasets[0].borderColor = '#10b981'; // Emerald for high tech affinity
+            } else {
+                utilityChart.data.datasets[0].borderColor = '#2563eb'; // Standard blue
+            }
+            
+            utilityChart.update('none');
+        }
+
+        function initChart() {
+            const { costs, probabilities } = generateData(0, 0);
+            
+            utilityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: costs,
+                    datasets: [{
+                        label: 'Probability of AV Choice',
+                        data: probabilities,
+                        borderColor: '#2563eb',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        fill: true,
+                        backgroundColor: 'rgba(37, 99, 235, 0.05)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `P(Choice): ${context.parsed.y.toFixed(2)} at $${context.label}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Generalized Cost ($)', font: { weight: 'bold' } },
+                            grid: { display: false }
+                        },
+                        y: {
+                            min: 0,
+                            max: 1.0,
+                            title: { display: true, text: 'Probability P_nj', font: { weight: 'bold' } },
+                            ticks: { stepSize: 0.2 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize and listen
+        initChart();
+        document.getElementById('slider-affinity').addEventListener('input', updateChart);
+        document.getElementById('slider-penalty').addEventListener('input', updateChart);
+
+    </script>
+</body>
+</html>
