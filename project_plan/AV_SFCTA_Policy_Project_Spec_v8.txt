@@ -1,0 +1,95 @@
+====================================================================================================
+PROJECT SPECIFICATION DOCUMENT (REVISED & EXTENDED)
+Title: Evaluating Emerging Autonomous Vehicle (AV) Congestion, Safety, and Modal Shift Dynamics 
+       Using SFCTA's Activity-Based (SF-CHAMP) and Dynamic Network Simulation Framework
+Division: Strategy and Technology Policy, San Francisco County Transportation Authority (SFCTA)
+Author/Role: Nicole Corpuz, Quantitative Technology Policy Lead / Intern
+Date: July 2026
+Version: 8.0-PRODUCTION (Without Section 6)
+====================================================================================================
+
+1. EXECUTIVE SUMMARY & OBJECTIVES
+----------------------------------------------------------------------------------------------------
+This specification establishes an empirical, policy-aligned analytical pipeline to evaluate the 
+network-level impacts of Autonomous Vehicles (AVs) on San Francisco's transportation grid. It extends 
+existing SFCTA modeling tools (SF-CHAMP and Dynamic Traffic Assignment) by integrating public survey 
+microdata (NHTS, BATS, CHTS, LEHD LODES) to replace assumed parameters with empirically calibrated, 
+resilient models.
+
+Key Enhancements in Version 8.0:
+  1. Complete Upper-Level Nested Logit Logsum linkage with empirical Maximum Likelihood Estimation (MLE).
+  2. Integration of Markovian Tour Transitions for realistic activity chain modeling.
+  3. Iterative Proportional Fitting (IPF) to balance origin-destination simulated flows against LEHD LODES.
+  4. Income-Segmented Value of Time savings calibrated via MTC BATS household tables.
+  5. Formal inclusion of Information Gaps and Data Caveats regarding temporal snapshotting.
+
+2. INFORMATION GAPS & DATA CAVEATS
+----------------------------------------------------------------------------------------------------
+Prior to executing the workflow, the following data constraints and lurking variables must be acknowledged:
+  - Temporal Misalignment (The "Snapshot" Gap): BATS (2019/2023) and LEHD LODES operate on publication lags,
+    creating a temporal mismatch with 2026 real-time AV telemetry. Models require temporal adjustment 
+    factors to align static behavioral surveys with current network baselines.
+  - Mode Definition Drift: NHTS and CHTS often aggregate "Rideshare," "Taxi," and "AV" under a generic 
+    "For-Hire" umbrella. The ETL pipeline must employ probabilistic assignment based on local fleet 
+    deployment density to separate autonomous robotaxis from human-driven TNCs.
+
+3. PARAMETRIC TEMPORAL WINDOWING CONFIGURATION
+----------------------------------------------------------------------------------------------------
+3.1 Global Date-Range Execution Parameters:
+    All ingestion, cleaning, QA, and modeling scripts inherit two mandatory CLI/environment parameters:
+      - START_DATE (YYYY-MM-DD): Inclusive lower bound date for the analysis snapshot window.
+      - END_DATE   (YYYY-MM-DD): Inclusive upper bound date for the analysis snapshot window.
+
+4. ACCURACY UPGRADES & STATISTICAL ENHANCEMENTS
+----------------------------------------------------------------------------------------------------
+This pipeline shifts SF-CHAMP from assumed parameters to an empirically grounded Activity-Based Model.
+
+4.1 Mode Choice & Travel Time (NHTS / CHTS Microdata):
+    - Statistical Change: Implements Maximum Likelihood Estimation (MLE) to estimate Utility coefficients.
+    - Equation: LL(β) = Σ_n Σ_j y_nj * ln[P_nj(β)]
+    - Impact: Replaces assumed utility parameters with empirical coefficients estimated directly from 
+      revealed-preference survey data, maximizing the probability of observed mode choices.
+
+4.2 Equity Utility & Demographic Linking (MTC BATS Household Tables):
+    - Statistical Change: Empirically estimates Income-Segmented Value of Travel Time Savings (VOT_k).
+    - Equation: VOT_k = (β_ivtt,k / β_fare,k) * 60
+    - Impact: Accurately quantifies how specific income tiers trade time versus cost, enabling precise 
+      equity impact evaluations in Equity Priority Communities (EPCs).
+
+4.3 Spatial Flow Balancing (LEHD LODES / NextGen NHTS OD):
+    - Statistical Change: Uses Iterative Proportional Fitting (IPF) / Entropy Maximization.
+    - Equation: T_ij^(m) = T_ij^(m-1) * (O_i / Σ_k T_ik^(m-1)) * (D_j / Σ_k T_kj^(m-1))
+    - Impact: Constrains the simulated origin-destination trips from SF-CHAMP to match the actual spatial 
+      commuter flows reported in Census block data, ensuring resilient DTA macro-level inputs.
+
+4.4 Activity Chains & Tour Structure (BATS / NHTS Trip & Day Files):
+    - Statistical Change: Introduces Markovian Tour Transitions.
+    - Equation: P(S) = P(s_1) * Π_t P(s_t | s_{t-1}, X_t)
+    - Impact: Calculates the likelihood of generating secondary non-mandatory stops (e.g., errands on 
+      a commute home), critical for measuring AV staging/deadheading behavior between linked trips.
+
+5. INTEGRATED DATA INGESTION, CLEANING & QA GATEWAY MATRIX
+----------------------------------------------------------------------------------------------------
+5.1 Automated Data Ingestion Stack & API Sources:
+    - SF 311 & GIS Layers: DataSF SODA REST API filtered by requested_datetime.
+    - Federal Incident Telemetry: NHTSA Public API filtered by incident_date.
+    - Demographics & Microdata: U.S. Census Bureau ACS PUMS, MTC BATS tables, NHTS/CHTS microdata.
+    - Commuter Flows: LEHD LODES via Census REST API for IPF balancing.
+    - Transit Real-Time Speeds: 511.org GTFS-RT Protocol Buffers.
+    - Road Network Geometry: Ingested programmatically via OSMnx.
+
+5.2 Automated Cleaning & Harmonization ETL Rules:
+    - Rule 1 (Deduplication): Cross-reference SGO, 311, and SFFD logs using VIN and spatial coordinates.
+    - Rule 2 (Sequence Building): Group raw NHTS/BATS records by Household_ID/Person_ID, sorting by 
+      Departure_Time to construct continuous daily tour arrays.
+    - Rule 3 (Outlier Filtering): Join CHTS/NHTS records against DTA skims, filtering out self-reported 
+      travel times that deviate >3 standard deviations from network minimums.
+    - Rule 4 (Spatial Aggregation): Aggregate Census Block-level LEHD LODES flows to SFCTA TAZ grid.
+
+5.3 QA Gateway Validation Suite:
+    - QA Gate 1 (Telemetry Cross-Reconciliation): Automated VIN-level join between NHTSA SGO and CPUC logs.
+    - QA Gate 2 (SF-CHAMP Skim Convergence): Ensure RMSE_skim < 0.01 between DTA outputs and SF-CHAMP.
+    - QA Gate 3 (Flow & Mode Split Audit): Compare simulated TAZ-to-TAZ commuter flows against LEHD LODES.
+      Reject model run if Mean Absolute Error (MAE) across top 50 corridors > 5%.
+
+====================================================================================================
