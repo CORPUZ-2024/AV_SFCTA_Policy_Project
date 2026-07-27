@@ -1,0 +1,127 @@
+====================================================================================================
+PROJECT SPECIFICATION DOCUMENT (REVISED & TEMPORALLY BOUNDED)
+Title: Evaluating Emerging Autonomous Vehicle (AV) Congestion, Safety, and Modal Shift Dynamics 
+       Using SFCTA's Activity-Based (SF-CHAMP) and Dynamic Network Simulation Framework
+Division: Strategy and Technology Policy, San Francisco County Transportation Authority (SFCTA)
+Author/Role: Nicole Corpuz, Quantitative Technology Policy Lead / Intern
+Date: July 2026
+Version: 6.3-PRODUCTION (With Parametric Temporal Windowing, Date-Bounded Snapshot Analysis, & PopulationSim)
+====================================================================================================
+
+1. EXECUTIVE SUMMARY & OBJECTIVES
+----------------------------------------------------------------------------------------------------
+This specification establishes an empirical, policy-aligned analytical pipeline to evaluate the 
+network-level impacts of Autonomous Vehicles (AVs) on San Francisco's transportation grid. It extends 
+existing SFCTA modeling tools (SF-CHAMP and Dynamic Traffic Assignment) while addressing critical data 
+starvation, transit cannibalization, "deadheading" VMT, and emergency responder operational risks.
+
+Key Enhancements in Version 6.3:
+  1. Integration of Parametric Temporal Windowing (START_DATE to END_DATE) across all data ingestion, 
+     ETL cleaning, QA gateways, and snapshot modeling modules.
+  2. Date-bounded snapshot analysis engine for running scenario evaluation on targeted temporal slices.
+  3. Direct programmatic API integrations (DataSF SODA API, NHTSA REST API, 511.org GTFS-RT, UC Berkeley TIMS).
+  4. Complete Upper-Level Nested Logit Logsum linkage with fully defined mathematical variables.
+  5. Non-linear Highway Capacity Manual (HCM) incident curves and ODD-matched Bayesian SPRT safety engine.
+  6. Resilient open-source PopulationSim (ActivitySim) integration to construct the synthetic population 
+     from ACS PUMS and marginal targets, enabling precise income-segmented equity analysis.
+
+2. PARAMETRIC TEMPORAL WINDOWING CONFIGURATION
+----------------------------------------------------------------------------------------------------
+2.1 Global Date-Range Execution Parameters:
+    All ingestion, cleaning, QA, and modeling scripts inherit two mandatory CLI/environment parameters:
+      - START_DATE (Format: YYYY-MM-DD): The inclusive lower bound date for the analysis snapshot window.
+      - END_DATE   (Format: YYYY-MM-DD): The inclusive upper bound date for the analysis snapshot window.
+      - Delta_Days = END_DATE - START_DATE + 1: Total duration (days) of the evaluation snapshot.
+
+2.2 Temporal Filtering Across Data Sources:
+    - DataSF SODA API: Ingests records via `$where = "requested_datetime >= 'START_DATE T00:00:00' AND requested_datetime <= 'END_DATE T23:59:59'"`.
+    - NHTSA SGO API: Filters incidents where `incident_date BETWEEN 'START_DATE' AND 'END_DATE'`.
+    - GTFS-Realtime / AVL Archives: Slices transit speed logs to matching calendar dates `[START_DATE, END_DATE]`.
+    - CPUC Commercial Filings: Selects quarterly disclosures overlapping the `[START_DATE, END_DATE]` interval.
+    - Historical Control Window: Automatically sets `CONTROL_START = START_DATE - 21 days` to construct 
+      the 3-week pre-incident baseline for Causal Proxy 2.
+
+3. ECONOMETRIC & NETWORK METHODOLOGICAL ENHANCEMENTS
+----------------------------------------------------------------------------------------------------
+3.1 Complete Nested Logit Architecture & Mode Substitution to Transit:
+    To measure true modal shift from public transit (Muni/BART) to AVs, the lower "For-Hire" nest 
+    must pass its composite inclusive value (logsum) up to the primary tour-mode choice tree.
+
+    A. Lower-Level For-Hire Nest Systematic Utility Equations:
+       V_TNC_AV = b_0_AV + b_fare * Fare_AV + b_ivtt_AV * IVTT + b_ovtt * OVTT + b_comfort * Comfort_Discount
+       V_TNC_H  = b_0_H  + b_fare * Fare_H  + b_ivtt_H  * IVTT + b_ovtt * OVTT
+       ...
+
+    B. Inclusive Value (Logsum) of For-Hire Nest:
+       I_FH = ln[ exp(V_TNC_AV / mu_FH) + exp(V_TNC_H / mu_FH) ]
+
+    C. Upper-Level Tour-Mode Choice Tree (Transit vs. Drive vs. Walk vs. For-Hire):
+       V_FH_Composite = mu_FH * I_FH + b_income_segment * Income_Group
+       V_Transit      = b_0_transit + b_fare * Fare_Transit + b_ivtt_Transit * IVTT_Transit + b_wait * Wait_Time
+
+       Probability of Choosing Transit:
+         P(Transit) = exp(V_Transit) / [ exp(V_Transit) + exp(V_FH_Composite) + exp(V_Drive) + exp(V_Walk) ]
+
+3.2 Income-Segmented Equity Utility:
+    Equity Priority Communities (EPCs) are integrated directly into utility functions via income-stratified 
+    Value of Travel Time Savings (VOT_k) and neighborhood-specific Alternative Specific Constants (ASCs).
+
+3.3 Non-Linear HCM Incident Capacity Drop & Iterative DTA Feedback Loop:
+    - Incident Capacity Reduction Equation:
+      C_effective = C_base * [ 1 - ( 1.1 * (N_blocked / N_total)^0.8 + F_rubberneck ) ]
+
+    - Demand-Supply Feedback Equilibration Convergence Equation:
+      RMSE_skim = sqrt[ (1 / N_links) * SUM_{i=1}^{N_links} ( Skim_Time_DTA_{i, m} - Skim_Time_SFCHAMP_{i, m-1} )^2 ]
+
+3.4 Open-Source PopulationSim (ActivitySim) Integration:
+    To operationalize the Income_Group categorical variable for the Nested Logit choice model, a synthetic 
+    population is generated corresponding to the temporal snapshot year.
+    - Seed Ingestion: Pulls U.S. Census Bureau ACS Public Use Microdata Sample (PUMS) at the PUMA level 
+      to map the joint distribution of household characteristics.
+    - Marginal Controls: Ingests aggregate Census/ACS Summary File targets at the Traffic Analysis Zone (TAZ) level.
+    - Synthesis Engine: Utilizes the PopulationSim Iterative Proportional Updating (IPU) algorithm to 
+      expand the PUMS seed sample to align with TAZ-level marginal targets, assigning household expansion 
+      weights to create a fully disaggregated synthetic database of San Francisco travelers.
+
+4. TEMPORALLY SNAPSHOTTED CAUSAL PROXY PIPELINE
+----------------------------------------------------------------------------------------------------
+4.1 Proxy 1: Stratified Spatial Sampling for Deadheading VMT (R_deadhead)
+4.2 Proxy 2: Spatio-Temporal Buffer & Counterfactual Control for AV Blockages
+4.3 DMV vs. CPUC VMT Denominator Disambiguation
+
+5. ODD-MATCHED SAFETY EVALUATION & BAYESIAN REVERSION ARCHITECTURE
+----------------------------------------------------------------------------------------------------
+5.1 Operational Design Domain (ODD)-Matched Safety Baseline
+5.2 Sequential Probability Ratio Test (SPRT) & Bayesian Reversion Engine
+5.3 Hysteresis & Rolling Window Integration
+
+6. INTEGRATED DATA INGESTION, CLEANING & QA GATEWAY MATRIX WITH TEMPORAL BOUNDS
+----------------------------------------------------------------------------------------------------
+6.1 Automated Data Ingestion Stack & API Sources
+6.2 Automated Cleaning & Harmonization ETL Rules
+6.3 QA Gateway Validation Suite (Date-Bounded):
+    - QA Gate 1 (Telemetry Cross-Reconciliation)
+    - QA Gate 2 (SF-CHAMP Skim Convergence)
+    - QA Gate 3 (Proxy 1 Ground-Truth Calibration)
+    - QA Gate 4 (Proxy 2 Placebo Validation)
+    - QA Gate 5 (SPRT Stress Testing)
+    - QA Gate 6 (Demographic Marginal Validation): Compare total simulated counts of the PopulationSim 
+      synthetic database at the TAZ level against ACS marginal control targets. Reject pipeline execution 
+      if Mean Absolute Percentage Error (MAPE) > 1.0% for critical equity variables (e.g., income tiers).
+
+7. INTEGRATED 12-WEEK PROJECT WORKFLOW WITH TEMPORAL SNAPSHOT EXECUTION
+----------------------------------------------------------------------------------------------------
+Phase 1: Ingestion Pipeline, PostGIS Architecture & Demographics (Weeks 1-2)
+  - Week 1: Deploy PostGIS DB. Build Python ingestion scripts with START_DATE/END_DATE. Run PopulationSim IPU for snapshot year.
+  - Week 2: Ingest OSMnx graph. Execute Temporal ETL Rules 1-3. Run QA Gates 1 and 6.
+
+Phase 2: Snapshot Proxy Construction & Calibration (Weeks 3-5)
+Phase 3: SF-CHAMP & DTA Model Snapshot Simulation (Weeks 6-8)
+Phase 4: Snapshot Safety Evaluation & Policy Sensitivity Testing (Weeks 9-10)
+Phase 5: Visual Dashboards, Deliverables & Code Handoff (Weeks 11-12)
+
+8. VISUAL COMPONENT SPECIFICATIONS WITH TEMPORAL CONTROLS
+----------------------------------------------------------------------------------------------------
+Component 1: Operational GIS & Live Bayesian Risk Dashboard (Prospector Stack)
+Component 2: Executive Policy Trade-Off Engine & 3D Canyon Visualizer (Board View)
+====================================================================================================
