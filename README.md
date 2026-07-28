@@ -1,7 +1,7 @@
 # AV SFCTA Policy Project
 
 ## Project Goal
-This project **explores an empirical, policy-aligned analytical pipelines that evaluate the network-level impacts of Autonomous Vehicles (AVs) on San Francisco's transportation grid. It extends existing SFCTA modeling tools (SF-CHAMP and Dynamic Traffic Assignment) to measure true modal shift, transit cannibalization, "deadheading" VMT, and emergency responder operational risks.
+This project **explores empirical, policy-aligned analytical pipelines that evaluate the network-level impacts of Autonomous Vehicles (AVs) on San Francisco's transportation grid. It extends existing SFCTA modeling tools (SF-CHAMP and Dynamic Traffic Assignment) to measure true modal shift, transit cannibalization, "deadheading" VMT, and emergency responder operational risks.
 
 ## Scope
 The exploration focuses on date-bounded snapshot analyses using parametric temporal windowing. It encompasses:
