@@ -23,7 +23,7 @@ The exploration focuses on date-bounded snapshot analyses using parametric tempo
 2. **Operational Dashboard (`frontend-dashboard/`)**: A React + MapLibre GL application providing live spatial monitoring of incident clusters, transit delays, and interactive filter controls.
 3. **Executive Engine (`executive-engine/`)**: A Streamlit application offering interactive policy controls to simulate deadheading taxes ($/mi) and Pick-up/Drop-off (PUDO) mandates with real-time corridor cost tables and disaggregated population mode choice matrices.
 
-## Implementation Directions
+## Implementation Directions & Demonstration Videos
 
 ### 1. Backend Pipeline Execution
 Ensure Python 3.9+ is installed.
@@ -54,11 +54,21 @@ npm install
 npm run dev
 ```
 
+#### 🎥 Operational GIS Dashboard Demonstration
+<video src="assets/demo_videos/MapLibre_GL_Operational_Dashboard.mp4" controls="controls" muted="muted" style="max-width: 100%; height: auto;">
+  Your browser does not support the video tag.
+</video>
+
 ### 3. Executive Policy Trade-Off Engine (Streamlit)
 ```bash
 py -m pip install -r executive-engine/requirements.txt
 py -m streamlit run executive-engine/app.py
 ```
+
+#### 🎥 Executive Policy Engine Demonstration
+<video src="assets/demo_videos/Policy_Engine_Dashboard.mp4" controls="controls" muted="muted" style="max-width: 100%; height: auto;">
+  Your browser does not support the video tag.
+</video>
 
 ### 4. Database Setup
 A `docker-compose.yml` file is provided to spin up a local PostGIS database for spatial data staging.
