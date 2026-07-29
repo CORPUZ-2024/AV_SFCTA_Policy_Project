@@ -110,3 +110,85 @@ body {
   font-size: 0.875rem;
 }
 
+/* Marker Pins & Pulse Animations */
+.marker-pin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.marker-pin.blockage {
+  background: #ff4d4d;
+  border: 2px solid #ffffff;
+}
+
+.marker-pin.deadhead {
+  background: #ffb84d;
+  border: 2px solid #ffffff;
+}
+
+.marker-pin.pudo {
+  background: #38bdf8;
+  border: 2px solid #ffffff;
+}
+
+.marker-pin.telemetry {
+  background: #a855f7;
+  border: 2px solid #ffffff;
+}
+
+.marker-pulse {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: pulse 2s infinite ease-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.incident-details {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.incident-details h4 {
+  margin: 0 0 0.5rem 0;
+  color: #ff4d4d;
+  font-size: 0.875rem;
+}
+
+.incident-details button {
+  background: #334155;
+  color: #fff;
+  border: none;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+.incident-details button:hover {
+  background: #475569;
+}
+
+
