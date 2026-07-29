@@ -174,12 +174,12 @@ col_left, col_right = st.columns(2)
 with col_left:
     st.subheader("🛣️ Table 1: Corridor-Level Operational & Capacity Matrix")
     st.caption("Dynamically updates based on Deadheading Tax ($/mi) and PUDO Zone Enforcement.")
-    st.dataframe(df_corridors, use_container_width=True, hide_index=True)
+    st.dataframe(df_corridors)
 
 with col_right:
     st.subheader("👥 Table 2: Income-Segmented Population Equity & Mode Shift Matrix")
     st.caption("Disaggregated synthetic traveler population (800,000 San Franciscans) generated via PopulationSim IPU.")
-    st.dataframe(df_population, use_container_width=True, hide_index=True)
+    st.dataframe(df_population)
 
 st.markdown("---")
 
