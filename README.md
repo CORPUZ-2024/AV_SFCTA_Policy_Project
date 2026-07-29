@@ -9,7 +9,8 @@ The exploration focuses on date-bounded snapshot analyses using parametric tempo
 - **Rule 4 Spatial/CRS Harmonization**: Mandatory transformation of all ingested API data to `EPSG:26910` (NAD83 UTM Zone 10N) prior to metric spatial joins (Rule 1 deduplication and Rule 3 GTFS jump filtering).
 - **6-Gate QA Gateway Suite**: Rigorous validation matrix return tuples across all 6 QA Gates, including new **QA Gate 6 (Demographic Marginal Validation)** enforcing `MAPE <= 1.0%` for cells with `>= 30` households.
 - **Income-Segmented Econometric Engine**: Upper-Level Nested Logit choice tree incorporating PopulationSim `Income_Group` categorical variables and disaggregated Value of Travel Time Savings (`VOT_k = b_ivtt_k / b_fare_k`).
-- **Data Ingestion**: Direct integration with DataSF SODA, NHTSA Standing General Order (SGO) releases, 511.org GTFS-RT feeds, and UC Berkeley TIMS CPUC/DMV disclosures.
+- **Interactive Executive Streamlit Engine**: Dynamic corridor deadheading cost modeling, disaggregated population equity mode shift matrices, styled dark-mode tables with aligned container heights, and grouped bar chart visualizations.
+- **MapLibre GL Operational Dashboard**: High-performance dark vector/raster GIS monitoring with animated incident pins, pulse effects, and live filter controls.
 
 ## Architecture & Components
 1. **Backend Pipeline (`backend/`)**:
@@ -19,8 +20,8 @@ The exploration focuses on date-bounded snapshot analyses using parametric tempo
    - `qa_gates.py`: Full 6-Gate QA Gateway Suite returning `(passed, statistic)` tuples.
    - `proxy_pipeline.py`: Causal Proxy 1 (Deadheading VMT ratio) and Proxy 2 (Net Causal Transit Delay).
    - `analytics_engine.py`: Nested Logit logsum linkage, Income-Segmented VOT, non-linear HCM capacity drops, and DTA feedback loop.
-2. **Operational Dashboard (`frontend-dashboard/`)**: A Vite-based React application providing live spatial monitoring of incident clusters and transit delays.
-3. **Executive Engine (`executive-engine/`)**: A Streamlit application offering a clean interface for policy makers to simulate deadheading taxes and Pick-up/Drop-off (PUDO) mandates.
+2. **Operational Dashboard (`frontend-dashboard/`)**: A React + MapLibre GL application providing live spatial monitoring of incident clusters, transit delays, and interactive filter controls.
+3. **Executive Engine (`executive-engine/`)**: A Streamlit application offering interactive policy controls to simulate deadheading taxes ($/mi) and Pick-up/Drop-off (PUDO) mandates with real-time corridor cost tables and disaggregated population mode choice matrices.
 
 ## Implementation Directions
 
@@ -46,7 +47,7 @@ python analytics_engine.py
 python qa_gates.py
 ```
 
-### 2. Operational GIS Dashboard (React)
+### 2. Operational GIS Dashboard (React + MapLibre)
 ```bash
 cd frontend-dashboard
 npm install

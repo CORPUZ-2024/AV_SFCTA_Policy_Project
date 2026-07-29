@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
 import datetime
 
@@ -54,28 +53,28 @@ fleet_scale = st.sidebar.slider(
 
 # Corridors Base Specs
 corridor_specs = [
-    {"name": 'Market St (CBD)', "base_vmt": 45000, "base_dh_ratio": 0.65, "avg_trip_mi": 3.2, "sensitivity": 0.55},
-    {"name": 'Mission St (Arterial)', "base_vmt": 38000, "base_dh_ratio": 0.58, "avg_trip_mi": 4.1, "sensitivity": 0.48},
-    {"name": 'Geary Blvd (Arterial)', "base_vmt": 32000, "base_dh_ratio": 0.52, "avg_trip_mi": 4.8, "sensitivity": 0.42},
-    {"name": 'Van Ness Ave (BRT Corridor)', "base_vmt": 28000, "base_dh_ratio": 0.48, "avg_trip_mi": 3.6, "sensitivity": 0.38},
-    {"name": 'Embarcadero (Waterfront/Hub)', "base_vmt": 22000, "base_dh_ratio": 0.38, "avg_trip_mi": 5.5, "sensitivity": 0.30}
+    {"name": 'Market St', "label": "Market St (CBD)", "base_vmt": 45000, "base_dh_ratio": 0.65, "avg_trip_mi": 3.2, "sens": 0.55},
+    {"name": 'Mission St', "label": "Mission St (Arterial)", "base_vmt": 38000, "base_dh_ratio": 0.58, "avg_trip_mi": 4.1, "sens": 0.48},
+    {"name": 'Geary Blvd', "label": "Geary Blvd (Arterial)", "base_vmt": 32000, "base_dh_ratio": 0.52, "avg_trip_mi": 4.8, "sens": 0.42},
+    {"name": 'Van Ness Ave', "label": "Van Ness Ave (BRT)", "base_vmt": 28000, "base_dh_ratio": 0.48, "avg_trip_mi": 3.6, "sens": 0.38},
+    {"name": 'Embarcadero', "label": "Embarcadero (Hub)", "base_vmt": 22000, "base_dh_ratio": 0.38, "avg_trip_mi": 5.5, "sens": 0.30}
 ]
 
 pudo_delay_reduction = 0.35 if pudo_mandates else 1.0
 pudo_capacity_recovery = 0.85 if pudo_mandates else 0.40 # HCM capacity multiplier
 
-# Build Dynamic Table 1: Corridor-Level Operational & Cost Matrix
-corridor_records = []
+# Build Dynamic Table 1 Data
+corridor_rows = []
 total_tax_revenue = 0
 total_fleet_vmt = 0
 total_deadhead_vmt = 0
 
 for spec in corridor_specs:
-    corr = spec["name"]
+    corr_label = spec["label"]
     base_vmt = spec["base_vmt"]
     base_dh = spec["base_dh_ratio"]
     avg_mi = spec["avg_trip_mi"]
-    sens = spec["sensitivity"]
+    sens = spec["sens"]
     
     # Dynamic Deadhead Ratio per corridor based on tax sensitivity
     tax_effect = np.exp(-sens * deadheading_tax)
@@ -101,28 +100,28 @@ for spec in corridor_specs:
     # Net Causal Transit Delay (Proxy 2)
     avg_delay_min = round((14.5 * (total_vmt / 40000.0) * (base_dh / 0.50)) * pudo_delay_reduction, 2)
     
-    corridor_records.append({
-        "Corridor": corr,
-        "Total AV VMT": f"{total_vmt:,}",
-        "Deadheading VMT": f"{dh_vmt:,}",
-        "Deadhead Ratio (%)": f"{dh_ratio * 100:.1f}%",
-        "DH Cost / Trip ($)": f"${dh_cost_per_trip:.2f}",
-        "Est. Tax Revenue ($)": f"${corridor_revenue:,.2f}",
-        "Avg Transit Delay": f"{avg_delay_min} min",
-        "HCM Cap Drop": f"{hcm_cap_drop_pct:.1f}%"
+    corridor_rows.append({
+        "Corridor": corr_label,
+        "Total AV VMT": total_vmt,
+        "Deadheading VMT": dh_vmt,
+        "Deadhead Ratio (%)": round(dh_ratio * 100, 1),
+        "DH Cost / Trip ($)": dh_cost_per_trip,
+        "Est. Tax Revenue ($)": corridor_revenue,
+        "Avg Delay (min)": avg_delay_min,
+        "HCM Cap Drop (%)": round(hcm_cap_drop_pct, 1)
     })
 
-df_corridors = pd.DataFrame(corridor_records)
+df_corridors = pd.DataFrame(corridor_rows)
 overall_dh_ratio = (total_deadhead_vmt / total_fleet_vmt) * 100 if total_fleet_vmt > 0 else 0.0
 
-# Build Dynamic Table 2: Income-Segmented Population Equity & Mode Shift Matrix (PopulationSim Engine)
+# Build Dynamic Table 2 Data (PopulationSim Synthetic Engine)
 income_tiers = [
-    {"tier": "Low Income (<$35k)", "pop": 185000, "base_transit": 48.5, "vot": 16.00},
-    {"tier": "Medium Income ($35k-$100k)", "pop": 340000, "base_transit": 32.0, "vot": 42.00},
-    {"tier": "High Income (>$100k)", "pop": 275000, "base_transit": 18.2, "vot": 96.00}
+    {"label": "Low Income", "desc": "Low Income (<$35k)", "pop": 185000, "base_transit": 48.5, "vot": 16.00},
+    {"label": "Medium Income", "desc": "Medium Income ($35k-$100k)", "pop": 340000, "base_transit": 32.0, "vot": 42.00},
+    {"label": "High Income", "desc": "High Income (>$100k)", "pop": 275000, "base_transit": 18.2, "vot": 96.00}
 ]
 
-population_records = []
+population_rows = []
 total_population = 0
 
 for tier_info in income_tiers:
@@ -130,23 +129,23 @@ for tier_info in income_tiers:
     total_population += pop
     base_t = tier_info["base_transit"]
     
-    # Disaggregated sensitivity to tax & PUDO transit reliability
-    sensitivity = 2.5 if "Low" in tier_info["tier"] else (1.2 if "Medium" in tier_info["tier"] else 0.5)
+    sensitivity = 2.5 if "Low" in tier_info["label"] else (1.2 if "Medium" in tier_info["label"] else 0.5)
     transit_shift_pct = round((deadheading_tax * 3.8 * sensitivity) + (4.2 if pudo_mandates else 0.0), 2)
     policy_t = round(min(85.0, base_t + transit_shift_pct), 2)
     transit_travelers = int(pop * (policy_t / 100.0))
     
-    population_records.append({
-        "Income Tier": tier_info["tier"],
-        "Synthetic Pop": f"{pop:,}",
-        "Effective VOT": f"${tier_info['vot']:.2f}/hr",
-        "Base Transit Share": f"{base_t:.1f}%",
-        "Policy Transit Share": f"{policy_t:.1f}%",
-        "Net Mode Shift": f"+{transit_shift_pct:.2f}%",
-        "Transit Travelers": f"{transit_travelers:,}"
+    population_rows.append({
+        "Income Tier": tier_info["desc"],
+        "Clean Label": tier_info["label"],
+        "Synthetic Population": pop,
+        "Effective VOT ($/hr)": tier_info['vot'],
+        "Base Transit Share (%)": base_t,
+        "Policy Transit Share (%)": policy_t,
+        "Net Mode Shift (%)": transit_shift_pct,
+        "Total Transit Travelers": transit_travelers
     })
 
-df_population = pd.DataFrame(population_records)
+df_population = pd.DataFrame(population_rows)
 
 # ---------------------------------------------------------
 # Executive KPI Overview Cards
@@ -183,247 +182,122 @@ with kpi4:
 st.markdown("---")
 
 # ---------------------------------------------------------
-# Helper Functions for Rich Dark Mode HTML Table Styling
-# ---------------------------------------------------------
-
-def render_custom_dark_table_1(df):
-    html = """
-    <style>
-        .custom-dark-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: 'Inter', system-ui, sans-serif;
-            background-color: #0b1329;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            margin-bottom: 1rem;
-        }
-        .custom-dark-table th {
-            background: linear-gradient(90deg, #0284c7 0%, #0d9488 100%);
-            color: #ffffff;
-            font-weight: 600;
-            text-align: left;
-            padding: 12px 14px;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .custom-dark-table td {
-            padding: 11px 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-            color: #cbd5e1;
-            font-size: 0.875rem;
-        }
-        .custom-dark-table tr:nth-child(even) {
-            background-color: rgba(255, 255, 255, 0.02);
-        }
-        .custom-dark-table tr:hover {
-            background-color: rgba(56, 189, 248, 0.08);
-        }
-        .badge-cyan {
-            background: rgba(14, 165, 233, 0.2);
-            color: #38bdf8;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        .badge-amber {
-            background: rgba(245, 158, 11, 0.2);
-            color: #fbbf24;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        .badge-emerald {
-            background: rgba(16, 185, 129, 0.2);
-            color: #34d399;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        .badge-rose {
-            background: rgba(244, 63, 94, 0.2);
-            color: #fb7185;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-    </style>
-    <table class="custom-dark-table">
-        <thead>
-            <tr>
-                <th>Corridor</th>
-                <th>Total AV VMT</th>
-                <th>Deadheading VMT</th>
-                <th>DH Ratio</th>
-                <th>DH Cost / Trip</th>
-                <th>Est. Revenue</th>
-                <th>Avg Transit Delay</th>
-                <th>HCM Cap Drop</th>
-            </tr>
-        </thead>
-        <tbody>
-    """
-    for _, row in df.iterrows():
-        html += f"""
-        <tr>
-            <td style="font-weight:600; color:#f8fafc;">{row['Corridor']}</td>
-            <td>{row['Total AV VMT']}</td>
-            <td><span class="badge-amber">{row['Deadheading VMT']}</span></td>
-            <td><span class="badge-cyan">{row['Deadhead Ratio (%)']}</span></td>
-            <td><span class="badge-emerald">{row['DH Cost / Trip ($)']}</span></td>
-            <td style="color:#34d399; font-weight:600;">{row['Est. Tax Revenue ($)']}</td>
-            <td><span class="badge-rose">{row['Avg Transit Delay']}</span></td>
-            <td><span class="badge-rose">{row['HCM Cap Drop']}</span></td>
-        </tr>
-        """
-    html += "</tbody></table>"
-    return html
-
-def render_custom_dark_table_2(df):
-    html = """
-    <style>
-        .custom-dark-table-2 {
-            width: 100%;
-            border-collapse: collapse;
-            font-family: 'Inter', system-ui, sans-serif;
-            background-color: #0b1329;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            margin-bottom: 1rem;
-        }
-        .custom-dark-table-2 th {
-            background: linear-gradient(90deg, #7c3aed 0%, #059669 100%);
-            color: #ffffff;
-            font-weight: 600;
-            text-align: left;
-            padding: 12px 14px;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .custom-dark-table-2 td {
-            padding: 11px 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-            color: #cbd5e1;
-            font-size: 0.875rem;
-        }
-        .custom-dark-table-2 tr:nth-child(even) {
-            background-color: rgba(255, 255, 255, 0.02);
-        }
-        .custom-dark-table-2 tr:hover {
-            background-color: rgba(167, 139, 250, 0.08);
-        }
-        .badge-purple {
-            background: rgba(167, 139, 250, 0.2);
-            color: #c084fc;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        .badge-green {
-            background: rgba(52, 211, 153, 0.2);
-            color: #34d399;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-    </style>
-    <table class="custom-dark-table-2">
-        <thead>
-            <tr>
-                <th>Income Tier</th>
-                <th>Synthetic Pop</th>
-                <th>Effective VOT</th>
-                <th>Base Transit Share</th>
-                <th>Policy Transit Share</th>
-                <th>Net Mode Shift</th>
-                <th>Transit Travelers</th>
-            </tr>
-        </thead>
-        <tbody>
-    """
-    for _, row in df.iterrows():
-        html += f"""
-        <tr>
-            <td style="font-weight:600; color:#f8fafc;">{row['Income Tier']}</td>
-            <td>{row['Synthetic Pop']}</td>
-            <td><span class="badge-purple">{row['Effective VOT']}</span></td>
-            <td>{row['Base Transit Share']}</td>
-            <td><span class="badge-green">{row['Policy Transit Share']}</span></td>
-            <td><span class="badge-green">{row['Net Mode Shift']}</span></td>
-            <td style="color:#f8fafc; font-weight:600;">{row['Transit Travelers']}</td>
-        </tr>
-        """
-    html += "</tbody>table>"
-    return html
-
-# ---------------------------------------------------------
-# Dynamic Table 1 & Dynamic Table 2 Rendering
+# Styled Deep Dark Theme Tables with Identical Explicit Height (250px)
 # ---------------------------------------------------------
 
 col_left, col_right = st.columns(2)
 
+styled_df1 = df_corridors.style.format({
+    "Total AV VMT": "{:,}",
+    "Deadheading VMT": "{:,}",
+    "Deadhead Ratio (%)": "{:.1f}%",
+    "DH Cost / Trip ($)": "${:.2f}",
+    "Est. Tax Revenue ($)": "${:,.2f}",
+    "Avg Delay (min)": "{:.2f}",
+    "HCM Cap Drop (%)": "{:.1f}%"
+}).set_properties(**{
+    'background-color': '#0f172a',
+    'color': '#f8fafc',
+    'border-color': '#1e293b'
+})
+
+styled_df2 = df_population.drop(columns=["Clean Label"]).style.format({
+    "Synthetic Population": "{:,}",
+    "Effective VOT ($/hr)": "${:.2f}",
+    "Base Transit Share (%)": "{:.1f}%",
+    "Policy Transit Share (%)": "{:.1f}%",
+    "Net Mode Shift (%)": "+{:.2f}%",
+    "Total Transit Travelers": "{:,}"
+}).set_properties(**{
+    'background-color': '#0f172a',
+    'color': '#f8fafc',
+    'border-color': '#1e293b'
+})
+
 with col_left:
     st.subheader("🛣️ Table 1: Corridor-Level Operational & Cost Matrix")
     st.caption("Dynamically updates Deadheading Costs ($/trip), Deadhead Ratios (%), VMT, and Tax Revenue per Corridor.")
-    st.markdown(render_custom_dark_table_1(df_corridors), unsafe_allow_html=True)
+    # Passing explicit height=250 ensures Table 1 matches Table 2 height perfectly!
+    st.dataframe(styled_df1, height=250)
 
 with col_right:
     st.subheader("👥 Table 2: Income-Segmented Population Equity & Mode Shift Matrix")
     st.caption("Disaggregated synthetic traveler population (800,000 San Franciscans) generated via PopulationSim IPU.")
-    st.markdown(render_custom_dark_table_2(df_population), unsafe_allow_html=True)
+    # Passing explicit height=250 ensures Table 2 matches Table 1 height perfectly!
+    st.dataframe(styled_df2, height=250)
 
 st.markdown("---")
 
 # ---------------------------------------------------------
-# Visual Charts Section with Deep Dark Theme Styling
+# Visual Charts Section - Clean Rendering & Fixed Categorical Axes
 # ---------------------------------------------------------
 st.subheader("📈 Policy Sensitivity & Mode Choice Visualizations")
 
 chart_col1, chart_col2 = st.columns(2)
 
 with chart_col1:
-    # Bar Chart: Deadheading VMT Reduction per Corridor
-    chart_df = pd.DataFrame({
-        'Corridor': [c["name"].split(" ")[0] for c in corridor_specs],
-        'Baseline Deadhead VMT': [int(c["base_vmt"] * c["base_dh_ratio"]) for c in corridor_specs],
-        'Policy Deadhead VMT': [int(r["Deadheading VMT"].replace(",","")) for r in corridor_records]
-    })
+    # Short corridor names for clean x-axis labeling
+    clean_corridor_names = [s["name"] for s in corridor_specs]
+    base_dh_vmt_vals = [int(s["base_vmt"] * s["base_dh_ratio"]) for s in corridor_specs]
+    policy_dh_vmt_vals = df_corridors['Deadheading VMT'].tolist()
     
-    fig_vmt = go.Figure(data=[
-        go.Bar(name='Baseline Deadhead VMT', x=chart_df['Corridor'], y=chart_df['Baseline Deadhead VMT'], marker_color='#475569'),
-        go.Bar(name='Policy Deadhead VMT', x=chart_df['Corridor'], y=chart_df['Policy Deadhead VMT'], marker_color='#0284c7')
-    ])
+    fig_vmt = go.Figure()
+    fig_vmt.add_trace(go.Bar(
+        name='Baseline Deadhead VMT',
+        x=clean_corridor_names,
+        y=base_dh_vmt_vals,
+        marker_color='#475569'
+    ))
+    fig_vmt.add_trace(go.Bar(
+        name='Policy Deadhead VMT',
+        x=clean_corridor_names,
+        y=policy_dh_vmt_vals,
+        marker_color='#38bdf8'
+    ))
+    
     fig_vmt.update_layout(
         title="Empty Deadheading VMT Impact per Corridor",
         barmode='group',
-        paper_bgcolor='rgba(15, 23, 42, 0.6)',
-        plot_bgcolor='rgba(15, 23, 42, 0.6)',
-        font=dict(color='#cbd5e1'),
-        margin=dict(l=20, r=20, t=40, b=20)
+        paper_bgcolor='rgba(15, 23, 42, 0.8)',
+        plot_bgcolor='rgba(15, 23, 42, 0.8)',
+        font=dict(color='#e2e8f0'),
+        xaxis=dict(type='category', title='Corridor'),
+        yaxis=dict(title='VMT (Miles)'),
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+        margin=dict(l=40, r=20, t=50, b=40)
     )
     st.plotly_chart(fig_vmt, use_container_width=True)
 
 with chart_col2:
-    # Mode Share by Income Tier Chart
-    tiers_name = [t["tier"].split(" ")[0] for t in income_tiers]
-    base_shares = [t["base_transit"] for t in income_tiers]
-    policy_shares = [float(r["Policy Transit Share"].replace("%","")) for r in population_records]
+    # Clean tier labels without HTML bracket characters
+    clean_tier_names = df_population['Clean Label'].tolist()
+    base_transit_shares = df_population['Base Transit Share (%)'].tolist()
+    policy_transit_shares = df_population['Policy Transit Share (%)'].tolist()
     
-    fig_equity = go.Figure(data=[
-        go.Bar(name='Baseline Transit Share (%)', x=tiers_name, y=base_shares, marker_color='#475569'),
-        go.Bar(name='Policy-Adjusted Transit Share (%)', x=tiers_name, y=policy_shares, marker_color='#059669')
-    ])
+    fig_equity = go.Figure()
+    fig_equity.add_trace(go.Bar(
+        name='Baseline Transit Share (%)',
+        x=clean_tier_names,
+        y=base_transit_shares,
+        marker_color='#475569'
+    ))
+    fig_equity.add_trace(go.Bar(
+        name='Policy Transit Share (%)',
+        x=clean_tier_names,
+        y=policy_transit_shares,
+        marker_color='#34d399'
+    ))
+    
     fig_equity.update_layout(
         title="Public Transit Mode Share by Income Segment",
         barmode='group',
-        paper_bgcolor='rgba(15, 23, 42, 0.6)',
-        plot_bgcolor='rgba(15, 23, 42, 0.6)',
-        font=dict(color='#cbd5e1'),
-        margin=dict(l=20, r=20, t=40, b=20)
+        paper_bgcolor='rgba(15, 23, 42, 0.8)',
+        plot_bgcolor='rgba(15, 23, 42, 0.8)',
+        font=dict(color='#e2e8f0'),
+        xaxis=dict(type='category', title='Income Tier'),
+        yaxis=dict(title='Mode Share (%)', range=[0, 100]),
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+        margin=dict(l=40, r=20, t=50, b=40)
     )
     st.plotly_chart(fig_equity, use_container_width=True)
 
