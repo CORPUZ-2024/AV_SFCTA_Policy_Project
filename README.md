@@ -54,9 +54,9 @@ npm install
 npm run dev
 ```
 
-#### 🎥 Operational GIS Dashboard Demonstration
-<video src="assets/demo_videos/MapLibre_GL_Operational_Dashboard.mp4" controls="controls" muted="muted" style="max-width: 100%; height: auto;">
-  Your browser does not support the video tag.
+#### 🎥 Operational GIS Dashboard Video Demonstration
+<video src="https://raw.githubusercontent.com/CORPUZ-2024/AV_SFCTA_Policy_Project/main/assets/demo_videos/MapLibre_GL_Operational_Dashboard.mp4" controls="controls" muted="muted" style="width: 100%; max-width: 800px; height: auto;">
+  <a href="https://raw.githubusercontent.com/CORPUZ-2024/AV_SFCTA_Policy_Project/main/assets/demo_videos/MapLibre_GL_Operational_Dashboard.mp4">▶ Play Operational GIS Dashboard Video Demo</a>
 </video>
 
 ### 3. Executive Policy Trade-Off Engine (Streamlit)
@@ -65,9 +65,9 @@ py -m pip install -r executive-engine/requirements.txt
 py -m streamlit run executive-engine/app.py
 ```
 
-#### 🎥 Executive Policy Engine Demonstration
-<video src="assets/demo_videos/Policy_Engine_Dashboard.mp4" controls="controls" muted="muted" style="max-width: 100%; height: auto;">
-  Your browser does not support the video tag.
+#### 🎥 Executive Policy Engine Video Demonstration
+<video src="https://raw.githubusercontent.com/CORPUZ-2024/AV_SFCTA_Policy_Project/main/assets/demo_videos/Policy_Engine_Dashboard.mp4" controls="controls" muted="muted" style="width: 100%; max-width: 800px; height: auto;">
+  <a href="https://raw.githubusercontent.com/CORPUZ-2024/AV_SFCTA_Policy_Project/main/assets/demo_videos/Policy_Engine_Dashboard.mp4">▶ Play Executive Policy Engine Video Demo</a>
 </video>
 
 ### 4. Database Setup
