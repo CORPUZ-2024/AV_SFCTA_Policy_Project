@@ -55,9 +55,8 @@ npm run dev
 ```
 
 #### 🎥 Operational GIS Dashboard Video Demonstration
-<video src="https://raw.githubusercontent.com/CORPUZ-2024/AV_SFCTA_Policy_Project/main/assets/demo_videos/MapLibre_GL_Operational_Dashboard.mp4" controls="controls" muted="muted" style="width: 100%; max-width: 800px; height: auto;">
-  <a href="https://raw.githubusercontent.com/CORPUZ-2024/AV_SFCTA_Policy_Project/main/assets/demo_videos/MapLibre_GL_Operational_Dashboard.mp4">▶ Play Operational GIS Dashboard Video Demo</a>
-</video>
+![Operational GIS Dashboard Demonstration](assets/demo_videos/MapLibre_GL_Operational_Dashboard.gif)
+> [▶ Stream / Download HD MP4 Video](https://raw.githubusercontent.com/CORPUZ-2024/AV_SFCTA_Policy_Project/main/assets/demo_videos/MapLibre_GL_Operational_Dashboard.mp4)
 
 ### 3. Executive Policy Trade-Off Engine (Streamlit)
 ```bash
@@ -66,9 +65,8 @@ py -m streamlit run executive-engine/app.py
 ```
 
 #### 🎥 Executive Policy Engine Video Demonstration
-<video src="https://raw.githubusercontent.com/CORPUZ-2024/AV_SFCTA_Policy_Project/main/assets/demo_videos/Policy_Engine_Dashboard.mp4" controls="controls" muted="muted" style="width: 100%; max-width: 800px; height: auto;">
-  <a href="https://raw.githubusercontent.com/CORPUZ-2024/AV_SFCTA_Policy_Project/main/assets/demo_videos/Policy_Engine_Dashboard.mp4">▶ Play Executive Policy Engine Video Demo</a>
-</video>
+![Executive Policy Engine Demonstration](assets/demo_videos/Policy_Engine_Dashboard.gif)
+> [▶ Stream / Download HD MP4 Video](https://raw.githubusercontent.com/CORPUZ-2024/AV_SFCTA_Policy_Project/main/assets/demo_videos/Policy_Engine_Dashboard.mp4)
 
 ### 4. Database Setup
 A `docker-compose.yml` file is provided to spin up a local PostGIS database for spatial data staging.
