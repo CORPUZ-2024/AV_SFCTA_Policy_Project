@@ -55,9 +55,8 @@ npm run dev
 
 ### 3. Executive Policy Trade-Off Engine (Streamlit)
 ```bash
-cd executive-engine
-pip install -r requirements.txt
-streamlit run app.py
+py -m pip install -r executive-engine/requirements.txt
+py -m streamlit run executive-engine/app.py
 ```
 
 ### 4. Database Setup

@@ -40,8 +40,7 @@ function App() {
         <Map
           {...viewState}
           onMove={(evt: any) => setViewState(evt.viewState)}
-          mapStyle="mapbox://styles/mapbox/dark-v11"
-          mapboxAccessToken="pk.eyJ1IjoiZHVtbXkiLCJhIjoiY2R1bW15In0.dummy"
+          mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
         />
 
         <div className="overlay-panel">
