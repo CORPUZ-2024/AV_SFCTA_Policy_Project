@@ -46,6 +46,28 @@ def non_linear_hcm_capacity_drop(c_base, n_blocked, n_total, f_rubberneck):
     c_effective = c_base * (1 - (1.1 * ((n_blocked / n_total)**0.8) + f_rubberneck))
     return max(0, c_effective)
 
+def calculate_income_segmented_vot(b_ivtt_k, b_fare_k):
+    """
+    §7.2 Income-Segmented VOT:
+    VOT_k = b_ivtt_k / b_fare_k # $/hour, computed per income segment k
+    Requires binning PopulationSim's continuous household income into k tiers.
+    """
+    if b_fare_k == 0:
+        return 0.0
+    vot_k = (b_ivtt_k / b_fare_k) * 60.0  # Convert $/minute to $/hour
+    return vot_k
+
+def calculate_upper_level_tour_mode_utility(i_fh, mu_fh, income_tier="medium", b_income_dict=None):
+    """
+    §3.1 / §7.1 Upper-Level Tour-Mode Choice Tree (Transit vs. Drive vs. Walk vs. For-Hire):
+    V_FH_Composite = mu_FH * I_FH + b_income_segment * Income_Group
+    """
+    if b_income_dict is None:
+        b_income_dict = {"low": -0.5, "medium": 0.0, "high": 0.8}
+    b_income = b_income_dict.get(income_tier, 0.0)
+    v_fh_composite = (mu_fh * i_fh) + b_income
+    return v_fh_composite
+
 def run_dta_sfchamp_feedback_loop(c_base, n_blocked, n_total, f_rubberneck, max_iterations=10):
     """
     3.3 Iterative DTA Feedback Loop
@@ -75,14 +97,26 @@ def run_dta_sfchamp_feedback_loop(c_base, n_blocked, n_total, f_rubberneck, max_
     return rmse_skim
 
 if __name__ == "__main__":
-    print("Executing Phase 3: SF-CHAMP & DTA Snapshot Simulation")
+    print("=== Executing v7 SF-CHAMP & DTA Snapshot Simulation ===")
     v_tnc_av, v_tnc_h = calculate_nested_logit_utilities(
         fare_av=15.0, fare_h=20.0, ivtt_av=30.0, ivtt_h=35.0, ovtt=5.0, comfort_discount=1.0
     )
     
-    i_fh = calculate_inclusive_value(v_tnc_av, v_tnc_h)
+    mu_fh = 0.5
+    i_fh = calculate_inclusive_value(v_tnc_av, v_tnc_h, mu_fh=mu_fh)
     print(f"For-Hire Nest Inclusive Value (Logsum): {i_fh:.4f}")
+    
+    # Income-segmented equity VOT testing (§7.2)
+    vot_low  = calculate_income_segmented_vot(b_ivtt_k=-0.04, b_fare_k=-0.15)
+    vot_high = calculate_income_segmented_vot(b_ivtt_k=-0.08, b_fare_k=-0.05)
+    print(f"Income-Segmented VOT -> Low Income: ${vot_low:.2f}/hr | High Income: ${vot_high:.2f}/hr")
+    
+    # Upper-level composite utility with PopulationSim Income_Group (§7.1)
+    for tier in ["low", "medium", "high"]:
+        v_composite = calculate_upper_level_tour_mode_utility(i_fh, mu_fh, income_tier=tier)
+        print(f"V_FH_Composite (Income_Group='{tier}'): {v_composite:.4f}")
     
     # Run DTA Loop
     run_dta_sfchamp_feedback_loop(c_base=1800, n_blocked=1, n_total=3, f_rubberneck=0.15)
+
 
